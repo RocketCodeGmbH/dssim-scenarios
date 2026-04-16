@@ -26,8 +26,9 @@ import {
 } from 'dssim-kubernetes-controller';
 import {MyCustomIDSControllerExtension} from '../extensions/MyIdsExtionsion.js';
 import fs from 'fs';
-import {EDCController} from 'dssim-edc-controller';
+import {EDCController, SplitEDCController} from 'dssim-edc-controller';
 import {edcFactory} from './edcFactory.js';
+import {splitEdcFactory} from './splitEdcFactory.js';
 
 export const pullSecret = {
   [process.env.SCECTR_CONNECTOR_IMAGE_HOSTNAME!]: {
@@ -70,6 +71,14 @@ export const configurations: ScenarioConfiguration[] = [
       await KubernetesController.createInstance(false, undefined),
     defaultConnectorInstanceFactory: edcFactory,
     ConnectorControllerType: EDCController,
+    identityManagement: undefined,
+  },
+  {
+    name: 'EDC split deployment',
+    environmentControllerFactory: async (): Promise<KubernetesController> =>
+      await KubernetesController.createInstance(false, undefined),
+    defaultConnectorInstanceFactory: splitEdcFactory,
+    ConnectorControllerType: SplitEDCController,
     identityManagement: undefined,
   },
   {
