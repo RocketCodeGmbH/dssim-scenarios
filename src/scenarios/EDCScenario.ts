@@ -46,16 +46,6 @@ export class EdcSenario implements Scenario {
       ),
     ]);
 
-    await scenarioController.envController.deployContainerizedService(
-      'dataservice',
-      {
-        image:
-          'registry.gitlab.cc-asp.fraunhofer.de/dssim/dssim-kubernetes-controller/dataservice:autopull',
-        pullSecret: kubRegSecret,
-      },
-      [{port: 4000, name: 'default', path: '/'}]
-    );
-
     const provider = connectors[0];
     const consumer = connectors[1];
     const dps1 =
@@ -67,7 +57,7 @@ export class EdcSenario implements Scenario {
           allowedSourceTypes: ['HttpData'],
           allowedDestTypes: ['HttpProxy', 'HttpData'],
           properties: {
-            publicApiUrl: `http://${provider.instanceController.hostname}:${EDCInstance.PublicEndpoint.port}${EDCInstance.PublicEndpoint.path}/`,
+            publicApiUrl: `http://${provider.instanceController.hostname}:${EDCInstance.SignalingEndpoint.port}${EDCInstance.SignalingEndpoint.path}/`,
           },
         }
       );
@@ -158,7 +148,9 @@ export class EdcSenario implements Scenario {
     const description =
       await consumer.componentController.connectorApi.catalogService.requestCatalog(
         {
-          providerUrl: `http://${provider.instanceController.hostname}:8282/api/v1/ids/data`, //TODO: Get port and path from instance
+          counterPartyAddress: `http://${provider.instanceController.hostname}:8282/api/dsp/2025-1`,
+          counterPartyId: `urn:connector:${provider.instanceController.hostname}`,
+          protocol: 'dataspace-protocol-http:2025-1',
         }
       );
     scenarioController.log(

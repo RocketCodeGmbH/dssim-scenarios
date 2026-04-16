@@ -31,11 +31,11 @@
   },
   "dependencies": {
     "dotenv": "^16.0.3",
-    "dssim-core": "^0.1.0",
-    "dssim-edc-controller": "^0.1.0",
-    "dssim-ids-controller": "^0.1.0",
-    "dssim-kubernetes-controller": "^0.1.0",
-    "dssim-scenario-controller": "^0.1.0",
+    "dssim-core": "file:../dssim-core",
+    "dssim-edc-controller": "file:../dssim-edc-controller",
+    "dssim-ids-controller": "file:../dssim-ids-controller",
+    "dssim-kubernetes-controller": "file:../dssim-kubernetes-controller",
+    "dssim-scenario-controller": "file:../dssim-scenario-controller",
     "inquirer": "^9.1.4",
     "uuid": "^9.0.0"
   }
