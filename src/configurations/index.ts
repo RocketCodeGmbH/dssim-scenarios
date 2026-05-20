@@ -17,14 +17,14 @@
  *       Michel Otto - initial implementation
  *
  */
-import {ScenarioConfiguration} from 'dssim-core';
-import {DapsController, DSCController} from 'dssim-ids-controller';
+import { ScenarioConfiguration } from 'dssim-core';
+import { DapsController, DSCController } from 'dssim-ids-controller';
 import {
   KubernetesController,
   DapsInstance,
   DSCInstance,
 } from 'dssim-kubernetes-controller';
-import {MyCustomIDSControllerExtension} from '../extensions/MyIdsExtionsion.js';
+import { MyCustomIDSControllerExtension } from '../extensions/MyIdsExtionsion.js';
 import fs from 'fs';
 import {EDCController, SplitEDCController} from 'dssim-edc-controller';
 import {edcFactory} from './edcFactory.js';
@@ -105,6 +105,14 @@ export const configurations: ScenarioConfiguration[] = [
       await KubernetesController.createInstance(false, undefined),
     defaultConnectorInstanceFactory: dscFactory,
     ConnectorControllerType: MyCustomIDSControllerExtension,
+    identityManagement: undefined,
+  },
+  {
+    name: 'split EDC configuration',
+    environmentControllerFactory: async (): Promise<KubernetesController> =>
+      await KubernetesController.createInstance(false, undefined),
+    defaultConnectorInstanceFactory: splitEdcFactory,
+    ConnectorControllerType: EDCController,
     identityManagement: undefined,
   } /*
   {
