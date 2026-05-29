@@ -26,7 +26,7 @@ import {
 } from 'dssim-kubernetes-controller';
 import { MyCustomIDSControllerExtension } from '../extensions/MyIdsExtionsion.js';
 import fs from 'fs';
-import {EDCController, SplitEDCController} from 'dssim-edc-controller';
+import {EDCController} from 'dssim-edc-controller';
 import {edcFactory} from './edcFactory.js';
 import {splitEdcFactory} from './splitEdcFactory.js';
 
@@ -78,7 +78,7 @@ export const configurations: ScenarioConfiguration[] = [
     environmentControllerFactory: async (): Promise<KubernetesController> =>
       await KubernetesController.createInstance(false, undefined),
     defaultConnectorInstanceFactory: splitEdcFactory,
-    ConnectorControllerType: SplitEDCController,
+    ConnectorControllerType: EDCController,
     identityManagement: undefined,
   },
   {
@@ -106,15 +106,8 @@ export const configurations: ScenarioConfiguration[] = [
     defaultConnectorInstanceFactory: dscFactory,
     ConnectorControllerType: MyCustomIDSControllerExtension,
     identityManagement: undefined,
-  },
-  {
-    name: 'split EDC configuration',
-    environmentControllerFactory: async (): Promise<KubernetesController> =>
-      await KubernetesController.createInstance(false, undefined),
-    defaultConnectorInstanceFactory: splitEdcFactory,
-    ConnectorControllerType: EDCController,
-    identityManagement: undefined,
-  } /*
+  }
+  /*
   {
     name: 'With DockerController',
     environmentControllerFactory: async (): Promise<DockerController> =>
@@ -122,5 +115,5 @@ export const configurations: ScenarioConfiguration[] = [
     defaultInstanceFactory: dscFactory,
     ConnectorControllerType: MyCustomIDSControllerExtension,
     identityManagement: undefined,
-  },*/,
+  },*/
 ];
