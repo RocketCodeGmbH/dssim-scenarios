@@ -15,12 +15,16 @@
  *
  * Contributors:
  *       Michel Otto - initial implementation
+ *       Efrata Bayle - initial implementation
  *
  */
 
 import { Scenario, ScenarioControllerInterface } from 'dssim-core';
 import { splitEdcFactory } from '../configurations/splitEdcFactory.js';
 import { EDCController } from '../../../dssim-edc-controller/build/EDCController.js';
+import { DataAddress } from '../../../edc-lib/build/management-api/asset-api/types.gen.js';
+import { ContractRequest } from '../../../edc-lib/build/management-api/contract-negotiation-api/types.gen.js';
+import { DataPlaneInstanceSchema, RegisterDataplaneData } from '../../../edc-lib/build/control-api/data-plane-selector-control-api/types.gen.js';
 
 
 export class EDCFullFlowTest implements Scenario {
@@ -60,7 +64,7 @@ export class EDCFullFlowTest implements Scenario {
 
     console.log('  → Starting EDC Provider connector...');
     const provider = await controller.startConnector(
-      'username',
+      'integration-test-key',
       'password',
       'edcprovider-cp',
       splitEdcFactory('edcprovider')
@@ -69,12 +73,55 @@ export class EDCFullFlowTest implements Scenario {
 
     console.log('  → Starting EDC Consumer connector...');
     const consumer = await controller.startConnector(
-      'username',
+      'integration-test-key',
       'password',
       'edcconsumer-cp',
       splitEdcFactory('edcconsumer')
     );
     console.log('  ✓ Consumer ready\n');
+
+    try {
+      const providerDataplaneResponse = await (provider.componentController as EDCController).connectorApi.controlPlane.controlDataplaneSelector.registerDataplane({
+        body: {
+          "@context": {
+            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+          },
+          "@id": "edcprovider-dataplane",
+          url: `http://edcprovider-dp:7082/api/control/v1/dataplanes`,
+          allowedSourceTypes: ["HttpData"],
+          allowedDestTypes: ["HttpData", "HttpProxy"],
+          allowedTransferTypes: ["HttpData-PULL", "HttpData-PUSH"],
+        } as DataPlaneInstanceSchema & {allowedTransferTypes: string[]},
+        url: '/v1/dataplanes'
+      });
+      console.log(`  DEBUG Provider Dataplane registration response:`, JSON.stringify(providerDataplaneResponse, null, 2));
+      console.log('  ✓ Provider dataplane registered\n');
+
+    } catch (error) {
+      console.log(`  ⚠ Warning: Could not register provider dataplane: ${error}\n`);
+      EDCFullFlowTest.keepAlive();
+    }
+
+    try {
+      const consumerDataplaneResponse = await (consumer.componentController as EDCController).connectorApi.controlPlane.controlDataplaneSelector.registerDataplane({
+        body: {
+          "@context": {
+            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+          },
+          "@id": "edcconsumer-dataplane",
+          url: `http://edcconsumer-dp:7082/api/control/v1/dataplanes`,
+          allowedSourceTypes: ["HttpData"],
+          allowedDestTypes: ["HttpData", "HttpProxy"],
+          allowedTransferTypes: ["HttpData-PULL", "HttpData-PUSH"],
+        } as DataPlaneInstanceSchema & {allowedTransferTypes: string[]},
+        url: '/v1/dataplanes'
+      });
+      console.log(`  DEBUG Consumer dataplane response:`, JSON.stringify(consumerDataplaneResponse, null, 2));
+      console.log('  ✓ Consumer dataplane registered\n');
+    } catch (error) {
+      console.log(`  ⚠ Warning: Could not register consumer dataplane: ${error}\n`);
+      EDCFullFlowTest.keepAlive();
+    }
 
     // ============================================
     // PHASE 2: Create Asset on Provider
@@ -82,29 +129,33 @@ export class EDCFullFlowTest implements Scenario {
 
     try {
       const assetPayload = (provider.componentController as EDCController).connectorApi.controlPlane.assetService.createAssetV3({
-        asset: {
-          id: 'test-asset',
+        body: {
+          "@context": {
+            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+          },
+          "@id": "test-asset",
           properties: {
             'id': 'test-asset',
             'name': 'Product description',
             'contenttype': 'application/json',
           },
           dataAddress: {
-            properties: {
-              'name': 'Test asset',
-              'baseUrl': 'https://jsonplaceholder.typicode.com/users',
-              'type': 'HttpData',
-            },
-          },
+            type: 'HttpData',
+            baseUrl: 'https://jsonplaceholder.typicode.com/users',
+            name: 'Test asset',
+          } as DataAddress & { baseUrl: string; name: string },
         },
+        url: '/v3/assets'
       });
 
       const assetRes = await assetPayload;
       console.log(`  DEBUG Asset response:`, JSON.stringify(assetRes, null, 2));
-      console.log(`  ✓ Asset created: ${assetRes.data?.['@id']?.toString() || 'ID not found'}\n`);
+
     }
     catch (error) {
       console.log(`  ⚠ Warning: Could not create asset: ${error}\n`);
+      EDCFullFlowTest.keepAlive();
+
     }
 
 
@@ -113,101 +164,129 @@ export class EDCFullFlowTest implements Scenario {
     // // ============================================
 
     const policyId = 'aPolicy';
-
     try {
-      const policyPayload = {
-        id: policyId,
-        policy: {
-          uid: '123',
-          '@type': {
-            '@policytype': 'set',
+      const policyResponse = await (provider.componentController as EDCController).connectorApi.controlPlane.policyService.createPolicyDefinitionV3({
+        body: {
+          "@context": {
+            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+          },
+          "@id": policyId,
+          policy: {
+            "@context": "http://www.w3.org/ns/odrl.jsonld",
+            "@type": "Set"
           },
         },
-      };
-
-      const policyResponse = await (provider.componentController as EDCController).connectorApi.controlPlane.policyService.createPolicyDefinitionV3(policyPayload);
+        url: '/v3/policydefinitions'
+      }
+      );
       console.log(`  DEBUG Policy response:`, JSON.stringify(policyResponse, null, 2));
-      console.log(`  ✓ Policy definition created: ${policyResponse.data?.['@id']?.toString() || 'ID not found'}\n`);
 
-      const contractDefPayload = {
-        id: '1',
-        accessPolicyId: policyId,
-        contractPolicyId: policyId,
-        criteria: [],
-      };
-
-      const contractDefResponse = await (provider.componentController as EDCController).connectorApi.controlPlane.contractDefinitionService.createContractDefinitionV3(
-        contractDefPayload
+      const contractDefResponse = await (provider.componentController as EDCController).connectorApi.controlPlane.contractDefinitionService.createContractDefinitionV3({
+        body: {
+          "@context": {
+            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+          },
+          "@id": '1',
+          accessPolicyId: policyId,
+          contractPolicyId: policyId,
+          assetsSelector: [],
+        },
+        url: '/v3/contractdefinitions'
+      }
       );
       console.log(`  DEBUG Contract Def response:`, JSON.stringify(contractDefResponse, null, 2));
-      console.log(` ✓ Contract definition created: ${contractDefResponse.data?.['@id']?.toString() || 'ID not found'}\n`);
+      console.log(` ✓ Policy Definition & Contract definition created.\n`);
 
     } catch (error) {
       console.log(
         `  ⚠ Warning: Could not create policy/contract: ${error}\n`
+
       );
+      EDCFullFlowTest.keepAlive();
     }
 
 
     // ============================================
     // PHASE 4: Consumer queries provider catalog
     // ============================================
-
+    console.log('PHASE 4: Consumer queries provider catalog...\n');
+    var catalogId = '';
+    var assetId = '';
+    var offerPolicy =[];
     try {
-      var catalogRequest = (consumer.componentController as EDCController).connectorApi.controlPlane.catalogService.requestCatalogV3({
-        providerUrl: `https://edcprovider-cp/api/v1/dsp`,
-        querySpec: {
-          offset: 0,
-          limit: 50,
-          sortOrder: 'DESC',
-          sortField: 'createdAt',
-          filterExpression: [],
-
+      var catalogResponse = await (consumer.componentController as EDCController).connectorApi.controlPlane.catalogService.requestCatalogV3({
+        body: {
+          "@context": {
+            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+          },
+          "@type": "CatalogRequest",
+          counterPartyAddress: `http://edcprovider-cp:9083/api/v1/dsp`,
+          protocol: 'dataspace-protocol-http',
         },
-      });
-      // var policyID = ((await catalogRequest).data 
-    
-      console.log(`  ✓ Consumer successfully queried provider catalog: \n`);
+        url: '/v3/catalog/request'
+      }
+      );
 
+      console.log(`  DEBUG Catalog response:`, JSON.stringify(catalogResponse, null, 2));
+      const catalog = (catalogResponse).data as any;
+      catalogId = catalog?.['dcat:dataset']?.['odrl:hasPolicy']?.['@id']?.toString() ?? '';
+      assetId = catalog?.['dcat:dataset']?.['@id']?.toString() ?? '';
+      offerPolicy = catalog?.['dcat:dataset']?.['odrl:hasPolicy'];
+      console.log(`  ✓ Catalog queried successfully. Found asset: ${assetId} catalog: ${catalogId}\n`);
+   
     } catch (error) {
       console.log(
         `  ⚠ Warning: Consumer could not query provider catalog: ${error}\n`
       );
+      EDCFullFlowTest.keepAlive();
     }
 
 
     // ============================================
     // PHASE 5: Negotiate Contract
     // ============================================
-
-    const contractNegotiationPayload = {
-      providerUrl: `https://edcprovider-cp/api/v1/dsp`,
-      offer: {
-        offerId: 'offer-test',
-        contractOfferId: 'contract-offer-test',
-        assetId: 'test-asset',
-        assetName: 'test-asset',
-      },
-      counterPartyId: 'test-connector',
-    };
-
     var contractId = '';
     try {
-      const nego = (await consumer.componentController as EDCController).connectorApi.controlPlane.contractNegotiationService.initiateContractNegotiationV3({
-        contractNegotiationPayload
-      });
-      const Id = (await nego).data?.['@id']?.toString()!;
-      const status = (await consumer.componentController as EDCController).connectorApi.controlPlane.contractNegotiationService.getNegotiationStateV3({
-        path: {
-          id: Id
-        }
+      const nego = await (consumer.componentController as EDCController).connectorApi.controlPlane.contractNegotiationService.initiateContractNegotiationV3({
+        body: {
+          "@context": {
+            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+          },
+          counterPartyAddress: `http://edcprovider-cp:9083/api/v1/dsp`,
+          policy: {
+            "@context": "http://www.w3.org/ns/odrl.jsonld",
+            "@id": catalogId,
+            "@type": `http://www.w3.org/ns/odrl/2/Offer`,
+            assigner: "did:web:edcprovider-cp%3A9083:tester",
+            target: assetId,
+            ...offerPolicy, 
+          },
+          protocol: 'dataspace-protocol-http',
+        } as ContractRequest & { '@context': any },
+        url: '/v3/contractnegotiations'
       });
 
-      if ((await status).data?.state == 'CONFIRMED') {
-        console.log(`  ✓ Contract negotiation successful: ${Id}\n`);
-      } else if ((await status).data?.state == 'TERMINATED') {
-        console.log(`  ✗ Contract negotiation failed: ${Id}\n`);
-        return;
+      console.log(`  DEBUG Negotiation response:`, JSON.stringify(nego, null, 2));
+      const Id = (nego).data?.['@id']?.toString()!;
+
+      const waitForState = async (id: string, targetState: string, maxRetries = 20) => {
+        for (let i = 0; i < maxRetries; i++) {
+          const status = await (consumer.componentController as EDCController)
+            .connectorApi.controlPlane.contractNegotiationService
+            .getNegotiationStateV3({ path: { id } });
+
+          if (status.data?.state === targetState || status.data?.state === 'TERMINATED') {
+            return status.data.state;
+          }
+          console.log(`  → Waiting for negotiation to reach state ${targetState}... Current state: ${status.data?.state} \n`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+        throw new Error('Negotiation timed out');
+      };
+
+      const finalState = await waitForState(Id, 'FINALIZED');
+      if (finalState === 'TERMINATED') {
+        throw new Error('Contract negotiation was terminated');
       }
 
       var contractResponse = await (consumer.componentController as EDCController).connectorApi.controlPlane.contractNegotiationService.getAgreementForNegotiationV3({
@@ -223,6 +302,7 @@ export class EDCFullFlowTest implements Scenario {
       console.log(
         `  ⚠ Warning: Contract negotiation failed: ${error}\n`
       );
+      EDCFullFlowTest.keepAlive();
     }
 
 
@@ -231,30 +311,62 @@ export class EDCFullFlowTest implements Scenario {
     // // ============================================
 
     try {
-
-      const transferPayload = {
-        contractId: contractId,
-        counterPartyAddress: `https://edcprovider-cp/api/v1/dsp`,
-        protocol: 'dataspace-protocol-http:2025-1',
-        transferType: 'HttpData-PULL'
+      const transferResponse = await (consumer.componentController as EDCController).connectorApi.controlPlane.transferProcessService.initiateTransferProcessV3({
+        body: {
+          "@context": {
+            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+          },
+          contractId: contractId,
+          counterPartyAddress: `http://edcprovider-cp:9083/api/v1/dsp`,
+          protocol: 'dataspace-protocol-http',
+          transferType: 'HttpData-PULL',
+          assetId: assetId
+        },
+        url: '/v3/transferprocesses'
       }
-      await (consumer.componentController as EDCController).connectorApi.controlPlane.transferProcessService.initiateTransferProcessV3({
-        transferPayload
-      });
+      );
+      console.log(`  DEBUG Transfer initiation response:`, JSON.stringify(transferResponse, null, 2));
+      console.log(`  ✓ Data transfer initiated\n`);
 
     } catch (error) {
       console.log(
         `  ⚠ Negotiation/Transfer phase: ${error}\n`
       );
+      EDCFullFlowTest.keepAlive();
     }
 
-    // ============================================
-    // KEEP ALIVE: Scenario stays running
-    // ============================================
 
+
+    // ============================================
+    // Test: Query assets on provider side to check if asset creation was successful
+    // ============================================
+    const assetsList = await (provider.componentController as EDCController).connectorApi.controlPlane.assetService.requestAssetsV3({
+      url: '/v3/assets/request'
+    });
+    console.log(`  DEBUG Assets at provider:`, JSON.stringify(assetsList, null, 2));
+
+    const assetWithName = (provider.componentController as EDCController).connectorApi.controlPlane.assetService.getAssetV3({
+      path: {
+        id: assetId,
+      },
+      url: '/v3/assets/{id}'
+    });
+    console.log(`  DEBUG Get asset response:`, JSON.stringify(await assetWithName, null, 2));
+
+
+  };
+
+
+  // ============================================
+  // KEEPS ALIVE: Scenario stays running
+  // ============================================
+
+  static async keepAlive(): Promise<void> {
+    console.log(`  → Scenario will keep running to allow debugging...\n`);
     await new Promise(() => {
       setInterval(() => {
       }, 30000);
     });
   }
+
 }
