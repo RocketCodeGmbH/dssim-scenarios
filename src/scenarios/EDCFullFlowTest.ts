@@ -21,10 +21,10 @@
 
 import { Scenario, ScenarioControllerInterface } from 'dssim-core';
 import { splitEdcFactory } from '../configurations/splitEdcFactory.js';
-import { EDCController } from '../../../dssim-edc-controller/build/EDCController.js';
 import { DataAddress } from '../../../edc-lib/build/management-api/asset-api/types.gen.js';
 import { ContractRequest } from '../../../edc-lib/build/management-api/contract-negotiation-api/types.gen.js';
 import { DataPlaneInstanceSchema, RegisterDataplaneData } from '../../../edc-lib/build/control-api/data-plane-selector-control-api/types.gen.js';
+import { EDCController } from 'dssim-edc-controller';
 
 
 export class EDCFullFlowTest implements Scenario {
@@ -64,8 +64,8 @@ export class EDCFullFlowTest implements Scenario {
 
     console.log('  → Starting EDC Provider connector...');
     const provider = await controller.startConnector(
+      'x-api-key',
       'integration-test-key',
-      'password',
       'edcprovider-cp',
       splitEdcFactory('edcprovider')
     );
@@ -73,55 +73,73 @@ export class EDCFullFlowTest implements Scenario {
 
     console.log('  → Starting EDC Consumer connector...');
     const consumer = await controller.startConnector(
+      'x-api-key',
       'integration-test-key',
-      'password',
       'edcconsumer-cp',
       splitEdcFactory('edcconsumer')
     );
     console.log('  ✓ Consumer ready\n');
 
-    try {
-      const providerDataplaneResponse = await (provider.componentController as EDCController).connectorApi.controlPlane.controlDataplaneSelector.registerDataplane({
-        body: {
-          "@context": {
-            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
-          },
-          "@id": "edcprovider-dataplane",
-          url: `http://edcprovider-dp:7082/api/control/v1/dataplanes`,
-          allowedSourceTypes: ["HttpData"],
-          allowedDestTypes: ["HttpData", "HttpProxy"],
-          allowedTransferTypes: ["HttpData-PULL", "HttpData-PUSH"],
-        } as DataPlaneInstanceSchema & {allowedTransferTypes: string[]},
+    // trying to get regiesterd dps
+    try{
+      const dps = await (provider.componentController as EDCController).connectorApi.controlPlane.controlDataplaneSelector.getAllDataPlaneInstances({
         url: '/v1/dataplanes'
       });
-      console.log(`  DEBUG Provider Dataplane registration response:`, JSON.stringify(providerDataplaneResponse, null, 2));
-      console.log('  ✓ Provider dataplane registered\n');
-
+      console.log(`  DEBUG Registered dataplanes at provider:`, JSON.stringify(dps, null, 2));    
     } catch (error) {
-      console.log(`  ⚠ Warning: Could not register provider dataplane: ${error}\n`);
+      console.log(`  ⚠ Warning: Could not retrieve registered dataplanes at provider: ${error}\n`);
       EDCFullFlowTest.keepAlive();
     }
 
-    try {
-      const consumerDataplaneResponse = await (consumer.componentController as EDCController).connectorApi.controlPlane.controlDataplaneSelector.registerDataplane({
-        body: {
-          "@context": {
-            "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
-          },
-          "@id": "edcconsumer-dataplane",
-          url: `http://edcconsumer-dp:7082/api/control/v1/dataplanes`,
-          allowedSourceTypes: ["HttpData"],
-          allowedDestTypes: ["HttpData", "HttpProxy"],
-          allowedTransferTypes: ["HttpData-PULL", "HttpData-PUSH"],
-        } as DataPlaneInstanceSchema & {allowedTransferTypes: string[]},
-        url: '/v1/dataplanes'
-      });
-      console.log(`  DEBUG Consumer dataplane response:`, JSON.stringify(consumerDataplaneResponse, null, 2));
-      console.log('  ✓ Consumer dataplane registered\n');
-    } catch (error) {
-      console.log(`  ⚠ Warning: Could not register consumer dataplane: ${error}\n`);
-      EDCFullFlowTest.keepAlive();
-    }
+    //Creates a DP registration on both consumer and provider side. This is needed for the control plane to be able to select a DP for the transfer process later on. In this scenario, the connectors would register its dataplane on startup.
+    // try {
+    //   const providerDataplaneResponse = await (provider.componentController as EDCController).connectorApi.controlPlane.controlDataplaneSelector.registerDataplane({
+    //     body: {
+    //       "@context": {
+    //         "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    //       },
+    //       "@id": "edcprovider-dp",
+    //       url: `http://edcprovider-dp:7082/api/control`,
+    //       allowedSourceTypes: ["HttpData"],
+    //       allowedDestTypes: ["HttpData", "HttpProxy"],
+    //       allowedTransferTypes: ["HttpData-PULL", "HttpData-PUSH"],
+    //       properties: {
+    //         "publicApiUrl": "http://edcprovider-dp:7084/api/v2/public/"
+    //       }
+    //     } as DataPlaneInstanceSchema & { allowedTransferTypes: string[], properties: Record<string, string> },
+    //     url: '/v1/dataplanes'
+    //   });
+    //   console.log(`  DEBUG Provider Dataplane registration response:`, JSON.stringify(providerDataplaneResponse, null, 2));
+    //   console.log('  ✓ Provider dataplane registered\n');
+
+    // } catch (error) {
+    //   console.log(`  ⚠ Warning: Could not register provider dataplane: ${error}\n`);
+    //   EDCFullFlowTest.keepAlive();
+    // }
+
+    // try {
+    //   const consumerDataplaneResponse = await (consumer.componentController as EDCController).connectorApi.controlPlane.controlDataplaneSelector.registerDataplane({
+    //     body: {
+    //       "@context": {
+    //         "@vocab": "https://w3id.org/edc/v0.0.1/ns/"
+    //       },
+    //       "@id": "edcconsumer-dp",
+    //       url: `http://edcconsumer-dp:7082/api/control`,
+    //       allowedSourceTypes: ["HttpData"],
+    //       allowedDestTypes: ["HttpData", "HttpProxy"],
+    //       allowedTransferTypes: ["HttpData-PULL", "HttpData-PUSH"],
+    //       properties: {
+    //         "publicApiUrl": "http://edcconsumer-dp:7084/api/v2/public/"
+    //       }
+    //     } as DataPlaneInstanceSchema & { allowedTransferTypes: string[], properties: Record<string, string> },
+    //     url: '/v1/dataplanes'
+    //   });
+    //   console.log(`  DEBUG Consumer dataplane response:`, JSON.stringify(consumerDataplaneResponse, null, 2));
+    //   console.log('  ✓ Consumer dataplane registered\n');
+    // } catch (error) {
+    //   console.log(`  ⚠ Warning: Could not register consumer dataplane: ${error}\n`);
+    //   EDCFullFlowTest.keepAlive();
+    // }
 
     // ============================================
     // PHASE 2: Create Asset on Provider
@@ -212,7 +230,7 @@ export class EDCFullFlowTest implements Scenario {
     console.log('PHASE 4: Consumer queries provider catalog...\n');
     var catalogId = '';
     var assetId = '';
-    var offerPolicy =[];
+    var offerPolicy = [];
     try {
       var catalogResponse = await (consumer.componentController as EDCController).connectorApi.controlPlane.catalogService.requestCatalogV3({
         body: {
@@ -233,7 +251,7 @@ export class EDCFullFlowTest implements Scenario {
       assetId = catalog?.['dcat:dataset']?.['@id']?.toString() ?? '';
       offerPolicy = catalog?.['dcat:dataset']?.['odrl:hasPolicy'];
       console.log(`  ✓ Catalog queried successfully. Found asset: ${assetId} catalog: ${catalogId}\n`);
-   
+
     } catch (error) {
       console.log(
         `  ⚠ Warning: Consumer could not query provider catalog: ${error}\n`
@@ -259,7 +277,7 @@ export class EDCFullFlowTest implements Scenario {
             "@type": `http://www.w3.org/ns/odrl/2/Offer`,
             assigner: "did:web:edcprovider-cp%3A9083:tester",
             target: assetId,
-            ...offerPolicy, 
+            ...offerPolicy,
           },
           protocol: 'dataspace-protocol-http',
         } as ContractRequest & { '@context': any },
@@ -305,9 +323,31 @@ export class EDCFullFlowTest implements Scenario {
       EDCFullFlowTest.keepAlive();
     }
 
+    // // ============================================
+    // // PHASE 5.5 : Check DP 
+    // // ============================================
+
+    const dataPlaneStatus_Consumer = await (consumer.componentController as EDCController).connectorApi.controlPlane.controlDataplaneSelector.findDataPlaneById({
+        path: {
+          id: 'edcconsumer-dp'
+        },
+         url: '/v1/dataplanes/{id}'
+      });
+
+      const dataPlaneStatus_Provider = await (provider.componentController as EDCController).connectorApi.controlPlane.controlDataplaneSelector.findDataPlaneById({
+        path: {
+          id: 'edcprovider-dp'
+        },
+        url: '/v1/dataplanes/{id}'
+      });
+      
+      console.log(`  DEBUG Consumer dataplane status:`, JSON.stringify(dataPlaneStatus_Consumer, null, 2));
+      console.log(`  DEBUG Provider dataplane status:`, JSON.stringify(dataPlaneStatus_Provider, null, 2));
+      console.log(`  ✓ Dataplane status retrieved successfully\n`);
+
 
     // // ============================================
-    // // PHASE 6: Negotiate Contract
+    // // PHASE 6: Data Transfer 
     // // ============================================
 
     try {
@@ -327,6 +367,41 @@ export class EDCFullFlowTest implements Scenario {
       );
       console.log(`  DEBUG Transfer initiation response:`, JSON.stringify(transferResponse, null, 2));
       console.log(`  ✓ Data transfer initiated\n`);
+      const id = transferResponse.data?.['@id']?.toString()!;
+     
+      try {
+        const edr = await (consumer.componentController as EDCController).connectorApi.controlPlane.edrCacheService.requestEdrEntriesV3({
+          url: '/v3/edrs/request'
+        });
+        console.log(`  DEBUG EDR response:`, JSON.stringify(edr, null, 2));
+        console.log(`  ✓ EDR retrieved successfully\n`);
+      } catch (error) {
+        console.log(
+          `  ⚠ Warning: Could not retrieve EDR: ${error}\n`
+        );
+        EDCFullFlowTest.keepAlive();
+      }
+
+  
+      const waitForTransferState = async (id: string, targetState: string, maxRetries = 20) => {
+        for (let i = 0; i < maxRetries; i++) {
+          const status = await (consumer.componentController as EDCController)
+            .connectorApi.controlPlane.transferProcessService.getTransferProcessStateV3({ path: { id } });
+
+          if (status.data?.state === targetState || status.data?.state === 'TERMINATED') {
+            return status.data.state;
+          }
+          console.log(`  → Waiting for transfer process to reach state ${targetState}... Current state: ${status.data?.state} \n`);
+          await new Promise(r => setTimeout(r, 5000));
+        }
+        throw new Error('Transfer process timed out');
+      };
+
+      const state = await waitForTransferState(id, 'COMPLETED');
+      if (state === 'TERMINATED') {
+        throw new Error('Data transfer was terminated');
+      }
+      console.log(`  ✓ Data transfer completed successfully\n`);
 
     } catch (error) {
       console.log(
@@ -352,7 +427,9 @@ export class EDCFullFlowTest implements Scenario {
       url: '/v3/assets/{id}'
     });
     console.log(`  DEBUG Get asset response:`, JSON.stringify(await assetWithName, null, 2));
+    EDCFullFlowTest.keepAlive();
 
+    
 
   };
 
@@ -368,5 +445,6 @@ export class EDCFullFlowTest implements Scenario {
       }, 30000);
     });
   }
+
 
 }

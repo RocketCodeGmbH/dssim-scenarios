@@ -24,18 +24,18 @@ import {pullSecret} from './index.js';
 
 export const splitEdcFactory = (deploymentName: string) => {
 
-const loadEdcKeyStoreFile = () =>
-  fs.readFileSync('./assets/edc/certs/cert.pfx', 'base64');
+  const loadEdcKeyStoreFile = () =>
+    fs.readFileSync('./assets/edc/certs/cert.pfx', 'base64');
 
-const loadEdcVaultFile = () =>
-  fs.readFileSync('./assets/edc/consumer-vault.properties').toString();
+  const loadEdcVaultFile = () =>
+    fs.readFileSync('./assets/edc/consumer-vault.properties').toString();
 
-// TODO: Future enhancement - enable vault and postgres when needed
-// import {PostgreSQLInstance, VaultInstance } from 'dssim-kubernetes-controller';
+  // TODO: Future enhancement - enable vault and postgres when needed
+  // import {PostgreSQLInstance, VaultInstance } from 'dssim-kubernetes-controller';
 
-const generateCpConfig = (cpHostname: string, cpEndpoints: Endpoint[]) => {
-  const port = (name: string) => cpEndpoints.find(e => e.name === name)?.port;
-  return `
+  const generateCpConfig = (cpHostname: string, cpEndpoints: Endpoint[]) => {
+    const port = (name: string) => cpEndpoints.find(e => e.name === name)?.port;
+    return `
 edc.participant.id=did:web:${cpHostname}%3A9083:tester
 edc.component.id=tester-connector
 edc.hostname=${cpHostname}
@@ -99,12 +99,12 @@ edc.policy.pm.url=https://api-nprd.traxes.io/prprd/forwatt/v2
 edc.policy.pm.token.url=https://acc.signin.energy/am/oauth2/realms/root/realms/difesp/access_token
 edc.policy.pm.token.client.id=esp_FraunhoferPermissionCZ1MsY_001
 edc.policy.pm.token.client.secret.alias=pm-secret`;
-};
+  };
 
-const generateDpConfig = (dpHostname: string, cpHostname: string, dpEndpoints: Endpoint[]) => {
-  const dpPort = (name: string) => dpEndpoints.find(e => e.name === name)?.port;
-  const cpControlPort = SplitEDCInstance.CpEndpoints.find(e => e.name === 'control')?.port;
-  return `
+  const generateDpConfig = (dpHostname: string, cpHostname: string, dpEndpoints: Endpoint[]) => {
+    const dpPort = (name: string) => dpEndpoints.find(e => e.name === name)?.port;
+    const cpControlPort = SplitEDCInstance.CpEndpoints.find(e => e.name === 'control')?.port;
+    return `
     edc.participant.id=did:web:${dpHostname}:tester
     edc.component.id=tester-connector
     edc.hostname=${dpHostname}
@@ -131,7 +131,7 @@ const generateDpConfig = (dpHostname: string, cpHostname: string, dpEndpoints: E
     // edc.datasource.default.password=devpass
     // edc.datasource.default.url=jdbc:postgresql://postgreshost:5432/edc
     `.trim();
-};
+  };
   return new SplitEDCInstance(
     deploymentName,
     'username',
@@ -142,24 +142,20 @@ const generateDpConfig = (dpHostname: string, cpHostname: string, dpEndpoints: E
     loadEdcVaultFile(),
     '123',
     {
-      image: 'otmi100/connector-controlplane-mock:0.14.0-inmem-1', 
+      image: 'otmi100/connector-controlplane-mock:0.14.0-inmem-1',
       pullSecret: pullSecret,
     },
+    // {
+    //   image: 'otmi100/connector-dataplane:0.14.0',
+    //   pullSecret: pullSecret,
+    // }
     {
-      image: 'otmi100/connector-dataplane:0.14.0',
+      image: 'ebaylerc/dataplane-inmem:latest',
       pullSecret: pullSecret,
     }
 
-    // {
-    //   image: 'ebaylerc/connector-controlplane:latest', 
-    //   pullSecret: pullSecret,
-    // },
-    // {
-    //   image: 'ebaylerc/connector-dataplane:latest',
-    //   pullSecret: pullSecret,
-    // }
-  
-  )};
+  )
+};
 
 // export const postgresFactory = (deploymentName: string = 'postgres') =>
 //   new PostgreSQLInstance(deploymentName, 'edc', 'edc', 'devpass', {
