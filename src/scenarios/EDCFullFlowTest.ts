@@ -101,9 +101,7 @@ export class EDCFullFlowTest implements Scenario {
       const dps = await (
         provider.componentController as EDCController
       ).connectorApi.controlPlane.controlDataplaneSelector.getAllDataPlaneInstances(
-        {
-          url: '/v1/dataplanes',
-        }
+        {}
       );
       controller.log(
         'info',
@@ -196,7 +194,6 @@ export class EDCFullFlowTest implements Scenario {
             name: 'Test asset',
           } as DataAddress & {baseUrl: string; name: string},
         },
-        url: '/v3/assets',
       });
 
       const assetRes = await assetPayload;
@@ -235,7 +232,6 @@ export class EDCFullFlowTest implements Scenario {
             '@type': 'Set',
           },
         },
-        url: '/v3/policydefinitions',
       });
       controller.log(
         'info',
@@ -257,7 +253,6 @@ export class EDCFullFlowTest implements Scenario {
             contractPolicyId: policyId,
             assetsSelector: [],
           },
-          url: '/v3/contractdefinitions',
         }
       );
       controller.log(
@@ -307,7 +302,6 @@ export class EDCFullFlowTest implements Scenario {
           counterPartyAddress: `http://edcprovider-cp:9083/api/v1/dsp`,
           protocol: 'dataspace-protocol-http',
         },
-        url: '/v3/catalog/request',
       });
 
       controller.log(
@@ -362,7 +356,6 @@ export class EDCFullFlowTest implements Scenario {
             },
             protocol: 'dataspace-protocol-http',
           } as ContractRequest & {'@context': any},
-          url: '/v3/contractnegotiations',
         }
       );
 
@@ -377,7 +370,7 @@ export class EDCFullFlowTest implements Scenario {
       const waitForState = async (
         id: string,
         targetState: string,
-        maxRetries = 20
+        maxRetries = 60
       ) => {
         for (let i = 0; i < maxRetries; i++) {
           const status = await (
@@ -445,7 +438,6 @@ export class EDCFullFlowTest implements Scenario {
       path: {
         id: 'edcconsumer-dp',
       },
-      url: '/v1/dataplanes/{id}',
     });
 
     const dataPlaneStatus_Provider = await (
@@ -454,7 +446,6 @@ export class EDCFullFlowTest implements Scenario {
       path: {
         id: 'edcprovider-dp',
       },
-      url: '/v1/dataplanes/{id}',
     });
 
     controller.log(
@@ -497,7 +488,6 @@ export class EDCFullFlowTest implements Scenario {
             transferType: 'HttpData-PULL',
             assetId: assetId,
           },
-          url: '/v3/transferprocesses',
         }
       );
       controller.log(
@@ -509,34 +499,6 @@ export class EDCFullFlowTest implements Scenario {
       );
       controller.log('info', `  ✓ Data transfer initiated\n`, 'Scenario', {});
       const id = transferResponse.data?.['@id']?.toString() as string;
-
-      try {
-        const edr = await (
-          consumer.componentController as EDCController
-        ).connectorApi.controlPlane.edrCacheService.requestEdrEntriesV3({
-          url: '/v3/edrs/request',
-        });
-        controller.log(
-          'info',
-          `  DEBUG EDR response:` + JSON.stringify(edr, null, 2),
-          'Scenario',
-          {}
-        );
-        controller.log(
-          'info',
-          `  ✓ EDR retrieved successfully\n`,
-          'Scenario',
-          {}
-        );
-      } catch (error) {
-        controller.log(
-          'warn',
-          `  ⚠ Warning: Could not retrieve EDR: ${error}\n`,
-          'Scenario',
-          {}
-        );
-        EDCFullFlowTest.keepAlive(controller);
-      }
 
       const waitForTransferState = async (
         id: string,
@@ -567,13 +529,55 @@ export class EDCFullFlowTest implements Scenario {
         throw new Error('Transfer process timed out');
       };
 
-      const state = await waitForTransferState(id, 'COMPLETED');
+      // An HttpData-PULL transfer settles in STARTED (a standing access grant),
+      // not COMPLETED. Wait for STARTED, then use the EDR to pull the data from
+      // the provider's public data plane API — that fetch is what "completes" a
+      // pull transfer from the consumer's point of view.
+      const state = await waitForTransferState(id, 'STARTED');
       if (state === 'TERMINATED') {
         throw new Error('Data transfer was terminated');
       }
       controller.log(
         'info',
-        `  ✓ Data transfer completed successfully\n`,
+        `  ✓ Transfer reached STARTED — resolving EDR and pulling data\n`,
+        'Scenario',
+        {}
+      );
+
+      // Resolve the EDR (provider public endpoint + bearer token) for this
+      // transfer process.
+      const dataAddress = await (
+        consumer.componentController as EDCController
+      ).connectorApi.controlPlane.edrCacheService.getEdrEntryDataAddressV3({
+        path: {transferProcessId: id},
+      });
+      const edr = dataAddress.data as unknown as {
+        endpoint?: string;
+        authorization?: string;
+      };
+      if (!edr?.endpoint || !edr.authorization) {
+        throw new Error(
+          `EDR missing endpoint/authorization: ${JSON.stringify(
+            dataAddress.data
+          )}`
+        );
+      }
+
+      // Use the EDR to pull the actual data from the provider public API.
+      const dataResponse = await fetch(edr.endpoint, {
+        headers: {Authorization: edr.authorization},
+      });
+      const body = await dataResponse.text();
+      if (!dataResponse.ok) {
+        throw new Error(
+          `Data pull failed: HTTP ${dataResponse.status} ${body.slice(0, 300)}`
+        );
+      }
+      controller.log(
+        'info',
+        `  ✓ Data pulled via EDR (HTTP ${dataResponse.status}, ${
+          body.length
+        } bytes):\n${body.slice(0, 500)}\n`,
         'Scenario',
         {}
       );
@@ -592,9 +596,7 @@ export class EDCFullFlowTest implements Scenario {
     // ============================================
     const assetsList = await (
       provider.componentController as EDCController
-    ).connectorApi.controlPlane.assetService.requestAssetsV3({
-      url: '/v3/assets/request',
-    });
+    ).connectorApi.controlPlane.assetService.requestAssetsV3({});
     controller.log(
       'info',
       `  DEBUG Assets at provider:` + JSON.stringify(assetsList, null, 2),
@@ -608,7 +610,6 @@ export class EDCFullFlowTest implements Scenario {
       path: {
         id: assetId,
       },
-      url: '/v3/assets/{id}',
     });
     controller.log(
       'info',

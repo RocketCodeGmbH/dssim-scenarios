@@ -17,9 +17,9 @@
  *       Michel Otto - initial implementation
  *
  */
-import { Scenario, ScenarioControllerInterface, waitFor } from 'dssim-core';
-import { EDCController } from 'dssim-edc-controller';
-import { EDCInstance } from 'dssim-kubernetes-controller';
+import {Scenario, ScenarioControllerInterface, waitFor} from 'dssim-core';
+import {EDCController} from 'dssim-edc-controller';
+import {EDCInstance} from 'dssim-kubernetes-controller';
 
 const kubRegSecret = {
   [process.env.SCECTR_CONNECTOR_IMAGE_HOSTNAME!]: {

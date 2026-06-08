@@ -17,10 +17,10 @@
  *       Michel Otto - initial implementation
  *
  */
-import { Endpoint } from 'dssim-core';
-import { EDCInstance} from 'dssim-kubernetes-controller';
+import {Endpoint} from 'dssim-core';
+import {EDCInstance} from 'dssim-kubernetes-controller';
 import fs from 'fs';
-import { pullSecret } from './index.js';
+import {pullSecret} from './index.js';
 
 const loadEdcKeyStoreFile = () =>
   fs.readFileSync(`./assets/edc/certs/cert.pfx`, 'base64');
@@ -29,10 +29,15 @@ const loadEdcVaultFile = () =>
   fs.readFileSync(`./assets/edc/consumer-vault.properties`).toString();
 
 const generateEdcConfig = (hostname: string, endpoints: Endpoint[]) => {
-  console.log('Available endpoint names:', endpoints.map(e => e.name));
+  console.log(
+    'Available endpoint names:',
+    endpoints.map(e => e.name)
+  );
   return `edc.participant.id=urn:connector:${hostname}
 edc.hostname=${hostname}
-edc.dsp.callback.address=http://${hostname}:${endpoints.find(e => e.name === 'protocol')?.port}/api/dsp/2025-1
+edc.dsp.callback.address=http://${hostname}:${
+    endpoints.find(e => e.name === 'protocol')?.port
+  }/api/dsp/2025-1
 edc.api.auth.key=integration-test-key
 web.http.port=${endpoints.find(e => e.name === 'health')?.port}
 web.http.path=/api
@@ -48,7 +53,9 @@ web.http.public.port=${endpoints.find(e => e.name === 'public')?.port}
 web.http.public.path=/public
 edc.transfer.proxy.token.signer.privatekey.alias=1
 edc.transfer.proxy.token.verifier.publickey.alias=public-key
-edc.dataplane.token.validation.endpoint=http://${hostname}:${endpoints.find(e => e.name === 'control')?.port}/api/control/token
+edc.dataplane.token.validation.endpoint=http://${hostname}:${
+    endpoints.find(e => e.name === 'control')?.port
+  }/api/control/token
 edc.receiver.http.endpoint=http://dataservice:4000/receiver/urn:connector:provider/callback`;
 };
 
@@ -63,8 +70,7 @@ export const edcFactory = (deploymentName: string) =>
     '123456',
     [
       {
-        image:
-          'ebaylerc/edc-connector:0.14.0',
+        image: 'ebaylerc/edc-connector:0.14.0',
         pullSecret: pullSecret,
       },
     ]

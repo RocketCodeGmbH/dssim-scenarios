@@ -29,6 +29,21 @@ export const splitEdcFactory = (deploymentName: string) => {
   const loadEdcVaultFile = () =>
     fs.readFileSync('./assets/edc/consumer-vault.properties').toString();
 
+  // The data plane image ships with EDC's InMemoryVault (no vault-filesystem
+  // extension), so the mounted vault file is never read. Both signing and
+  // verification keys must therefore come from the FS Configuration, but via
+  // two different mechanisms:
+  //   - private signer key: AbstractPrivateKeyResolver falls back to
+  //     config.getString(alias), so it's a property named after the alias
+  //     (signer-key=...).
+  //   - public verifier key: LocalPublicKeyService only reads its cache (seeded
+  //     from edc.iam.publickeys.<n>.id/.value) then the vault — there is no
+  //     plain-property fallback, so it must be registered as edc.iam.publickeys.
+  // PEM newlines are escaped to '\r\n' so java.util.Properties reconstructs a
+  // valid multi-line PEM when the config file is loaded.
+  const loadPemAsProperty = (path: string) =>
+    fs.readFileSync(path).toString().replace(/\r?\n/g, '\\r\\n');
+
   // TODO: Future enhancement - enable vault and postgres when needed
   // import {PostgreSQLInstance, VaultInstance } from 'dssim-kubernetes-controller';
 
@@ -126,6 +141,12 @@ edc.policy.pm.token.client.secret.alias=pm-secret`;
 
     edc.transfer.proxy.token.signer.privatekey.alias=signer-key
     edc.transfer.proxy.token.verifier.publickey.alias=verifier-key
+
+    signer-key=${loadPemAsProperty('./assets/edc/certs/key.pem')}
+    edc.iam.publickeys.0.id=verifier-key
+    edc.iam.publickeys.0.value=${loadPemAsProperty(
+      './assets/edc/certs/public.pem'
+    )}
 
     web.http.path=/api
     web.http.port=${dpPort('health')}
