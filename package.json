@@ -36,6 +36,7 @@
     "dssim-ids-controller": "file:../dssim-ids-controller",
     "dssim-kubernetes-controller": "file:../dssim-kubernetes-controller",
     "dssim-scenario-controller": "file:../dssim-scenario-controller",
+    "edc-lib": "file:../edc-lib",
     "inquirer": "^9.1.4",
     "uuid": "^9.0.0"
   }

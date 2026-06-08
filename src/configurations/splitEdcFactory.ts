@@ -18,12 +18,11 @@
  *
  */
 import {Endpoint} from 'dssim-core';
-import {PostgreSQLInstance, SplitEDCInstance} from 'dssim-kubernetes-controller';
+import {EDCInstance, SplitEDCInstance} from 'dssim-kubernetes-controller';
 import fs from 'fs';
 import {pullSecret} from './index.js';
 
 export const splitEdcFactory = (deploymentName: string) => {
-
   const loadEdcKeyStoreFile = () =>
     fs.readFileSync('./assets/edc/certs/cert.pfx', 'base64');
 
@@ -101,9 +100,16 @@ edc.policy.pm.token.client.id=esp_FraunhoferPermissionCZ1MsY_001
 edc.policy.pm.token.client.secret.alias=pm-secret`;
   };
 
-  const generateDpConfig = (dpHostname: string, cpHostname: string, dpEndpoints: Endpoint[]) => {
-    const dpPort = (name: string) => dpEndpoints.find(e => e.name === name)?.port;
-    const cpControlPort = SplitEDCInstance.CpEndpoints.find(e => e.name === 'control')?.port;
+  const generateDpConfig = (
+    dpHostname: string,
+    cpHostname: string,
+    dpEndpoints: Endpoint[]
+  ) => {
+    const dpPort = (name: string) =>
+      dpEndpoints.find(e => e.name === name)?.port;
+    const cpControlPort = SplitEDCInstance.CpEndpoints.find(
+      e => e.name === 'control'
+    )?.port;
     return `
     edc.participant.id=did:web:${dpHostname}:tester
     edc.component.id=tester-connector
@@ -114,7 +120,9 @@ edc.policy.pm.token.client.secret.alias=pm-secret`;
     edc.vault.hashicorp.token=devpass
 
     edc.dpf.selector.url=http://${cpHostname}:${cpControlPort}/api/control/v1/dataplanes
-    edc.dataplane.api.public.baseurl=http://${dpHostname}:${dpPort('public')}/api/v2/public
+    edc.dataplane.api.public.baseurl=http://${dpHostname}:${dpPort(
+      'public'
+    )}/api/v2/public
 
     edc.transfer.proxy.token.signer.privatekey.alias=signer-key
     edc.transfer.proxy.token.verifier.publickey.alias=verifier-key
@@ -136,8 +144,10 @@ edc.policy.pm.token.client.secret.alias=pm-secret`;
     deploymentName,
     'username',
     'password',
-    (cpHostname: string, cpEndpoints: Endpoint[]) => generateCpConfig(cpHostname, cpEndpoints),
-    (dpHostname: string, cpHostname: string, dpEndpoints: Endpoint[]) => generateDpConfig(dpHostname, cpHostname, dpEndpoints),
+    (cpHostname: string, cpEndpoints: Endpoint[]) =>
+      generateCpConfig(cpHostname, cpEndpoints),
+    (dpHostname: string, cpHostname: string, dpEndpoints: Endpoint[]) =>
+      generateDpConfig(dpHostname, cpHostname, dpEndpoints),
     loadEdcKeyStoreFile(),
     loadEdcVaultFile(),
     '123',
@@ -153,8 +163,7 @@ edc.policy.pm.token.client.secret.alias=pm-secret`;
       image: 'ebaylerc/dataplane-inmem:latest',
       pullSecret: pullSecret,
     }
-
-  )
+  );
 };
 
 // export const postgresFactory = (deploymentName: string = 'postgres') =>
