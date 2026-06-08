@@ -289,7 +289,7 @@ export class EDCFullFlowTest implements Scenario {
     );
     let catalogId = '';
     let assetId = '';
-    let offerPolicy = [];
+    let offerPolicy: Record<string, unknown> = {};
     try {
       const catalogResponse = await (
         consumer.componentController as EDCController
@@ -310,12 +310,16 @@ export class EDCFullFlowTest implements Scenario {
         'Scenario',
         {}
       );
-      const catalog = catalogResponse.data as any;
-      catalogId =
-        catalog?.['dcat:dataset']?.['odrl:hasPolicy']?.['@id']?.toString() ??
-        '';
-      assetId = catalog?.['dcat:dataset']?.['@id']?.toString() ?? '';
-      offerPolicy = catalog?.['dcat:dataset']?.['odrl:hasPolicy'];
+      const catalog = catalogResponse.data;
+      const dataset = catalog?.['dcat:dataset'] as
+        | {
+            '@id'?: string;
+            'odrl:hasPolicy'?: Record<string, unknown> & {'@id'?: string};
+          }
+        | undefined;
+      catalogId = dataset?.['odrl:hasPolicy']?.['@id']?.toString() ?? '';
+      assetId = dataset?.['@id']?.toString() ?? '';
+      offerPolicy = dataset?.['odrl:hasPolicy'] ?? {};
       controller.log(
         'info',
         `  ✓ Catalog queried successfully. Found asset: ${assetId} catalog: ${catalogId}\n`,
@@ -355,7 +359,7 @@ export class EDCFullFlowTest implements Scenario {
               ...offerPolicy,
             },
             protocol: 'dataspace-protocol-http',
-          } as ContractRequest & {'@context': any},
+          } as ContractRequest,
         }
       );
 
