@@ -28,6 +28,7 @@ import {PISzenario} from './scenarios/ValueArtifactTransfer.js';
 import {DssimCli} from './ui/cli.js';
 import {runScenarioFunction} from './runFunction.js';
 import {EdcSenario} from './scenarios/EDCScenario.js';
+import {EDCFullFlowTest} from './scenarios/EDCFullFlowTest.js';
 
 process.on('uncaughtException', function (exception) {
   // eslint-disable-next-line no-console
@@ -46,6 +47,7 @@ const scenarios = [
   CustomControllerExtension,
   PISzenario,
   EdcSenario,
+  EDCFullFlowTest,
 ];
 
 const cli = new DssimCli(scenarios, runScenarioFunction);

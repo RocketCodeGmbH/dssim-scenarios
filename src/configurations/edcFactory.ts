@@ -29,35 +29,34 @@ const loadEdcVaultFile = () =>
   fs.readFileSync(`./assets/edc/consumer-vault.properties`).toString();
 
 const generateEdcConfig = (hostname: string, endpoints: Endpoint[]) => {
-  return `---
-  edc.ids.id=urn:connector:${hostname}
-  ids.webhook.address=http://${hostname}:${
-    endpoints.find(e => e.name === 'ids')?.port
-  }
-  web.http.port=${endpoints.find(e => e.name === 'controller')?.port}
-  web.http.path=${endpoints.find(e => e.name === 'controller')?.path}
-  web.http.management.port=${
-    endpoints.find(e => e.name === 'datamanagement')?.port
-  }
-  web.http.management.path=${
-    endpoints.find(e => e.name === 'datamanagement')?.path
-  }
-  web.http.ids.port=${endpoints.find(e => e.name === 'ids')?.port}
-  web.http.ids.path=${endpoints.find(e => e.name === 'ids')?.path}
-  web.http.protocol.port=${endpoints.find(e => e.name === 'dataplane')?.port}
-  web.http.protocol.path=${endpoints.find(e => e.name === 'dataplane')?.path}
-  edc.receiver.http.endpoint=http://dataservice:4000/receiver/urn:connector:provider/callback
-  edc.public.key.alias=public-key
-  edc.transfer.dataplane.token.signer.privatekey.alias=1
-  edc.transfer.proxy.token.signer.privatekey.alias=1
-  edc.transfer.proxy.token.verifier.publickey.alias=public-key
-  web.http.public.port=${endpoints.find(e => e.name === 'public')?.port}
-  web.http.public.path=${endpoints.find(e => e.name === 'public')?.path}
-  web.http.control.port=${endpoints.find(e => e.name === 'control')?.port}
-  web.http.control.path=${endpoints.find(e => e.name === 'control')?.path}
-  edc.dataplane.token.validation.endpoint=http://${hostname}:${
+  console.log(
+    'Available endpoint names:',
+    endpoints.map(e => e.name)
+  );
+  return `edc.participant.id=urn:connector:${hostname}
+edc.hostname=${hostname}
+edc.dsp.callback.address=http://${hostname}:${
+    endpoints.find(e => e.name === 'protocol')?.port
+  }/api/dsp/2025-1
+edc.api.auth.key=integration-test-key
+web.http.port=${endpoints.find(e => e.name === 'health')?.port}
+web.http.path=/api
+web.http.management.port=${endpoints.find(e => e.name === 'management')?.port}
+web.http.management.path=/api/management
+web.http.protocol.port=${endpoints.find(e => e.name === 'protocol')?.port}
+web.http.protocol.path=/api/dsp
+web.http.signaling.port=${endpoints.find(e => e.name === 'signaling')?.port}
+web.http.signaling.path=/api/signaling
+web.http.control.port=${endpoints.find(e => e.name === 'control')?.port}
+web.http.control.path=/api/control
+web.http.public.port=${endpoints.find(e => e.name === 'public')?.port}
+web.http.public.path=/public
+edc.transfer.proxy.token.signer.privatekey.alias=1
+edc.transfer.proxy.token.verifier.publickey.alias=public-key
+edc.dataplane.token.validation.endpoint=http://${hostname}:${
     endpoints.find(e => e.name === 'control')?.port
-  }/control/token`;
+  }/api/control/token
+edc.receiver.http.endpoint=http://dataservice:4000/receiver/urn:connector:provider/callback`;
 };
 
 export const edcFactory = (deploymentName: string) =>
@@ -71,8 +70,7 @@ export const edcFactory = (deploymentName: string) =>
     '123456',
     [
       {
-        image:
-          'registry.gitlab.cc-asp.fraunhofer.de/dssim/dssim-kubernetes-controller/edchttpt',
+        image: 'ebaylerc/edc-connector:0.14.0',
         pullSecret: pullSecret,
       },
     ]

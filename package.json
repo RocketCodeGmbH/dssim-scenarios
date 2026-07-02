@@ -17,7 +17,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/inquirer": "^9.0.3",
-    "@types/node": "^18.11.8",
+    "@types/node": "^20.11.0",
     "@types/prompt-sync": "^4.2.0",
     "@types/uuid": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^5.41.0",
@@ -32,11 +32,13 @@
   "dependencies": {
     "dotenv": "^16.0.3",
     "dssim-core": "^0.1.0",
-    "dssim-edc-controller": "^0.1.0",
-    "dssim-ids-controller": "^0.1.0",
-    "dssim-kubernetes-controller": "^0.1.0",
-    "dssim-scenario-controller": "^0.1.0",
+    "dssim-edc-controller": "github:RocketCodeGmbH/dssim-edc-controller#feature/edc-split-deployment",
+    "dssim-ids-controller": "github:RocketCodeGmbH/dssim-ids-controller",
+    "dssim-kubernetes-controller": "github:RocketCodeGmbH/dssim-kubernetes-controller#feature/edc-split-deployment",
+    "dssim-scenario-controller": "github:RocketCodeGmbH/dssim-scenario-controller#feature/edc-split-deployment",
+    "edc-lib": "^0.2.0",
     "inquirer": "^9.1.4",
     "uuid": "^9.0.0"
+    
   }
 }

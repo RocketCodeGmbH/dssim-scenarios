@@ -28,6 +28,7 @@ import {MyCustomIDSControllerExtension} from '../extensions/MyIdsExtionsion.js';
 import fs from 'fs';
 import {EDCController} from 'dssim-edc-controller';
 import {edcFactory} from './edcFactory.js';
+import {splitEdcFactory} from './splitEdcFactory.js';
 
 export const pullSecret = {
   [process.env.SCECTR_CONNECTOR_IMAGE_HOSTNAME!]: {
@@ -73,6 +74,14 @@ export const configurations: ScenarioConfiguration[] = [
     identityManagement: undefined,
   },
   {
+    name: 'EDC split deployment',
+    environmentControllerFactory: async (): Promise<KubernetesController> =>
+      await KubernetesController.createInstance(false, undefined),
+    defaultConnectorInstanceFactory: splitEdcFactory,
+    ConnectorControllerType: EDCController,
+    identityManagement: undefined,
+  },
+  {
     name: 'IDS configuration with daps',
     environmentControllerFactory: async () =>
       await KubernetesController.createInstance(true, undefined),
@@ -97,7 +106,8 @@ export const configurations: ScenarioConfiguration[] = [
     defaultConnectorInstanceFactory: dscFactory,
     ConnectorControllerType: MyCustomIDSControllerExtension,
     identityManagement: undefined,
-  } /*
+  },
+  /*
   {
     name: 'With DockerController',
     environmentControllerFactory: async (): Promise<DockerController> =>
@@ -105,5 +115,5 @@ export const configurations: ScenarioConfiguration[] = [
     defaultInstanceFactory: dscFactory,
     ConnectorControllerType: MyCustomIDSControllerExtension,
     identityManagement: undefined,
-  },*/,
+  },*/
 ];
