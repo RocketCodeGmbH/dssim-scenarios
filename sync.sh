@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NS=""
+NS="test-21"
 DEPLOYMENT="dssim-scenario"
 
 
@@ -10,7 +10,7 @@ POD=$(kubectl get pods -n "$NS" \
   -o jsonpath='{.items[0].metadata.name}')
 
 echo "Using pod: $POD"
-kubectl cp ./dssim-scenarios/src/ \
+kubectl cp ./src/ \
   "$NS/$POD:/app/dssim-scenarios"
 
 echo "Copied local src → pod"
