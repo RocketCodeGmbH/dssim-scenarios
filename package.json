@@ -31,13 +31,14 @@
   },
   "dependencies": {
     "dotenv": "^16.0.3",
-    "dssim-core": "github:RocketCodeGmbH/dssim-core",
+    "dssim-core": "^0.1.0",
     "dssim-edc-controller": "github:RocketCodeGmbH/dssim-edc-controller#feature/edc-split-deployment",
     "dssim-ids-controller": "github:RocketCodeGmbH/dssim-ids-controller",
     "dssim-kubernetes-controller": "github:RocketCodeGmbH/dssim-kubernetes-controller#feature/edc-split-deployment",
     "dssim-scenario-controller": "github:RocketCodeGmbH/dssim-scenario-controller#feature/edc-split-deployment",
-    "edc-lib": "github:RocketCodeGmbH/edc-lib",
+    "edc-lib": "^0.2.0",
     "inquirer": "^9.1.4",
     "uuid": "^9.0.0"
+    
   }
 }
