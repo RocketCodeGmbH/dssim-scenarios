@@ -19,12 +19,12 @@
  *
  */
 
-import {Scenario, ScenarioControllerInterface} from 'dssim-core';
-import {splitEdcFactory} from '../configurations/splitEdcFactory.js';
+import { Scenario, ScenarioControllerInterface } from 'dssim-core';
+import { splitEdcFactory } from '../configurations/splitEdcFactory.js';
 
-import {EDCController} from 'dssim-edc-controller';
-import {DataAddress} from 'edc-lib/management-api/asset-api';
-import {ContractRequest} from 'edc-lib/management-api/contract-negotiation-api';
+import { EDCController } from 'dssim-edc-controller';
+import { DataAddress } from 'edc-lib/management-api/asset-api';
+import { ContractRequest } from 'edc-lib/management-api/contract-negotiation-api';
 
 export class EDCFullFlowTest implements Scenario {
   scenario_name = 'EDC Full Flow Test - Infrastructure + Connectors + Workflow';
@@ -106,7 +106,7 @@ export class EDCFullFlowTest implements Scenario {
       controller.log(
         'info',
         `  DEBUG Registered dataplanes at provider:` +
-          JSON.stringify(dps, null, 2),
+        JSON.stringify(dps, null, 2),
         'Scenario',
         {}
       );
@@ -117,7 +117,6 @@ export class EDCFullFlowTest implements Scenario {
         'Scenario',
         {}
       );
-      EDCFullFlowTest.keepAlive(controller);
     }
 
     //Creates a DP registration on both consumer and provider side. This is needed for the control plane to be able to select a DP for the transfer process later on. In this scenario, the connectors would register its dataplane on startup.
@@ -143,7 +142,6 @@ export class EDCFullFlowTest implements Scenario {
 
     // } catch (error) {
     //   controller.log(`  ⚠ Warning: Could not register provider dataplane: ${error}\n`);
-    //   EDCFullFlowTest.keepAlive(controller);
     // }
 
     // try {
@@ -167,7 +165,6 @@ export class EDCFullFlowTest implements Scenario {
     //   controller.log('  ✓ Consumer dataplane registered\n');
     // } catch (error) {
     //   controller.log(`  ⚠ Warning: Could not register consumer dataplane: ${error}\n`);
-    //   EDCFullFlowTest.keepAlive(controller);
     // }
 
     // ============================================
@@ -192,7 +189,7 @@ export class EDCFullFlowTest implements Scenario {
             type: 'HttpData',
             baseUrl: 'https://jsonplaceholder.typicode.com/users',
             name: 'Test asset',
-          } as DataAddress & {baseUrl: string; name: string},
+          } as DataAddress & { baseUrl: string; name: string },
         },
       });
 
@@ -210,7 +207,6 @@ export class EDCFullFlowTest implements Scenario {
         'Scenario',
         {}
       );
-      EDCFullFlowTest.keepAlive(controller);
     }
 
     // // ============================================
@@ -258,7 +254,7 @@ export class EDCFullFlowTest implements Scenario {
       controller.log(
         'info',
         `  DEBUG Contract Def response:` +
-          JSON.stringify(contractDefResponse, null, 2),
+        JSON.stringify(contractDefResponse, null, 2),
         'Scenario',
         {}
       );
@@ -275,7 +271,6 @@ export class EDCFullFlowTest implements Scenario {
         'Scenario',
         {}
       );
-      EDCFullFlowTest.keepAlive(controller);
     }
 
     // ============================================
@@ -313,9 +308,9 @@ export class EDCFullFlowTest implements Scenario {
       const catalog = catalogResponse.data;
       const dataset = catalog?.['dcat:dataset'] as
         | {
-            '@id'?: string;
-            'odrl:hasPolicy'?: Record<string, unknown> & {'@id'?: string};
-          }
+          '@id'?: string;
+          'odrl:hasPolicy'?: Record<string, unknown> & { '@id'?: string };
+        }
         | undefined;
       catalogId = dataset?.['odrl:hasPolicy']?.['@id']?.toString() ?? '';
       assetId = dataset?.['@id']?.toString() ?? '';
@@ -333,7 +328,6 @@ export class EDCFullFlowTest implements Scenario {
         'Scenario',
         {}
       );
-      EDCFullFlowTest.keepAlive(controller);
     }
 
     // ============================================
@@ -380,7 +374,7 @@ export class EDCFullFlowTest implements Scenario {
           const status = await (
             consumer.componentController as EDCController
           ).connectorApi.controlPlane.contractNegotiationService.getNegotiationStateV3(
-            {path: {id}}
+            { path: { id } }
           );
 
           if (
@@ -429,7 +423,6 @@ export class EDCFullFlowTest implements Scenario {
         'Scenario',
         {}
       );
-      EDCFullFlowTest.keepAlive(controller);
     }
 
     // // ============================================
@@ -455,14 +448,14 @@ export class EDCFullFlowTest implements Scenario {
     controller.log(
       'info',
       `  DEBUG Consumer dataplane status:` +
-        JSON.stringify(dataPlaneStatus_Consumer, null, 2),
+      JSON.stringify(dataPlaneStatus_Consumer, null, 2),
       'Scenario',
       {}
     );
     controller.log(
       'info',
       `  DEBUG Provider dataplane status:` +
-        JSON.stringify(dataPlaneStatus_Provider, null, 2),
+      JSON.stringify(dataPlaneStatus_Provider, null, 2),
       'Scenario',
       {}
     );
@@ -497,7 +490,7 @@ export class EDCFullFlowTest implements Scenario {
       controller.log(
         'info',
         `  DEBUG Transfer initiation response:` +
-          JSON.stringify(transferResponse, null, 2),
+        JSON.stringify(transferResponse, null, 2),
         'Scenario',
         {}
       );
@@ -513,7 +506,7 @@ export class EDCFullFlowTest implements Scenario {
           const status = await (
             consumer.componentController as EDCController
           ).connectorApi.controlPlane.transferProcessService.getTransferProcessStateV3(
-            {path: {id}}
+            { path: { id } }
           );
 
           if (
@@ -553,7 +546,7 @@ export class EDCFullFlowTest implements Scenario {
       const dataAddress = await (
         consumer.componentController as EDCController
       ).connectorApi.controlPlane.edrCacheService.getEdrEntryDataAddressV3({
-        path: {transferProcessId: id},
+        path: { transferProcessId: id },
       });
       const edr = dataAddress.data as unknown as {
         endpoint?: string;
@@ -569,7 +562,7 @@ export class EDCFullFlowTest implements Scenario {
 
       // Use the EDR to pull the actual data from the provider public API.
       const dataResponse = await fetch(edr.endpoint, {
-        headers: {Authorization: edr.authorization},
+        headers: { Authorization: edr.authorization },
       });
       const body = await dataResponse.text();
       if (!dataResponse.ok) {
@@ -579,8 +572,7 @@ export class EDCFullFlowTest implements Scenario {
       }
       controller.log(
         'info',
-        `  ✓ Data pulled via EDR (HTTP ${dataResponse.status}, ${
-          body.length
+        `  ✓ Data pulled via EDR (HTTP ${dataResponse.status}, ${body.length
         } bytes):\n${body.slice(0, 500)}\n`,
         'Scenario',
         {}
@@ -592,7 +584,6 @@ export class EDCFullFlowTest implements Scenario {
         'Scenario',
         {}
       );
-      EDCFullFlowTest.keepAlive(controller);
     }
 
     // ============================================
@@ -618,28 +609,9 @@ export class EDCFullFlowTest implements Scenario {
     controller.log(
       'info',
       `  DEBUG Get asset response:` +
-        JSON.stringify(await assetWithName, null, 2),
+      JSON.stringify(await assetWithName, null, 2),
       'Scenario',
       {}
     );
-    EDCFullFlowTest.keepAlive(controller);
-  }
-
-  // ============================================
-  // KEEPS ALIVE: Scenario stays running
-  // ============================================
-
-  static async keepAlive(
-    controller: ScenarioControllerInterface
-  ): Promise<void> {
-    controller.log(
-      'info',
-      `  → Scenario will keep running to allow debugging...\n`,
-      'Scenario',
-      {}
-    );
-    await new Promise(() => {
-      setInterval(() => {}, 30000);
-    });
   }
 }

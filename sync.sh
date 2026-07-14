@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NS="test-21"
+NS="dssim-test"
 DEPLOYMENT="dssim-scenario"
 
 

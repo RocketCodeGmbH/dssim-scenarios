@@ -38,7 +38,7 @@
     "dssim-scenario-controller": "github:RocketCodeGmbH/dssim-scenario-controller#feature/edc-split-deployment",
     "edc-lib": "^0.2.0",
     "inquirer": "^9.1.4",
+    "ts-stopwatch": "^0.0.4",
     "uuid": "^9.0.0"
-    
   }
 }

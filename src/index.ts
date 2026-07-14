@@ -19,16 +19,17 @@
  */
 import './loadEnv.js';
 
-import {GetDescription} from './scenarios/GetDescription.js';
-import {DataService} from './scenarios/DataService.js';
-import {ResourceLimits} from './scenarios/ResourceLimits.js';
-import {ExplicitController} from './scenarios/ExplicitController.js';
-import {CustomControllerExtension} from './scenarios/CustomExtension.js';
-import {PISzenario} from './scenarios/ValueArtifactTransfer.js';
-import {DssimCli} from './ui/cli.js';
-import {runScenarioFunction} from './runFunction.js';
-import {EdcSenario} from './scenarios/EDCScenario.js';
-import {EDCFullFlowTest} from './scenarios/EDCFullFlowTest.js';
+import { GetDescription } from './scenarios/GetDescription.js';
+import { DataService } from './scenarios/DataService.js';
+import { ResourceLimits } from './scenarios/ResourceLimits.js';
+import { ExplicitController } from './scenarios/ExplicitController.js';
+import { CustomControllerExtension } from './scenarios/CustomExtension.js';
+import { PISzenario } from './scenarios/ValueArtifactTransfer.js';
+import { DssimCli } from './ui/cli.js';
+import { runScenarioFunction } from './runFunction.js';
+import { EdcSenario } from './scenarios/EDCScenario.js';
+import { EDCFullFlowTest } from './scenarios/EDCFullFlowTest.js';
+import { EDCScalingTest } from './scenarios/EDCScalingTest.js';
 
 process.on('uncaughtException', function (exception) {
   // eslint-disable-next-line no-console
@@ -40,6 +41,7 @@ process.on('unhandledRejection', (reason, p) => {
 });
 
 const scenarios = [
+  EDCScalingTest,
   GetDescription,
   DataService,
   ResourceLimits,
