@@ -10,8 +10,15 @@ POD=$(kubectl get pods -n "$NS" \
   -o jsonpath='{.items[0].metadata.name}')
 
 echo "Using pod: $POD"
+
 kubectl cp ./src/ \
   "$NS/$POD:/app/dssim-scenarios"
+
+kubectl cp ./package.json \
+  "$NS/$POD:/app/dssim-scenarios/package.json"
+
+kubectl cp ./package-lock.json \
+  "$NS/$POD:/app/dssim-scenarios/package-lock.json"
 
 echo "Copied local src → pod"
 

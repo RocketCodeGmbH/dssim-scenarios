@@ -202,7 +202,7 @@ export class EDCScalingTest implements Scenario {
                 await EDCScalingTest.negotiateAndTransfer(controller, consumer, batchSize, i)
                 controller.log(
                     'info',
-                    `  ✓ Consumer ${i} completed in ${stopwatch.getTime()} after a timeout of ${Math.floor(Math.random() * 999) + 2}ms\n`,
+                    `  ✓ Consumer ${i} completed in ${consumerTimer.getTime()}ms after a timeout of ${Math.floor(Math.random() * 999) + 2}ms\n`,
                     'ScalingTest',
                     { batchSize: batchSize.toString(), consumerIndex: i.toString() }
                 );
@@ -335,12 +335,19 @@ export class EDCScalingTest implements Scenario {
                 { path: { id: negoId } }
             );
             contractId = contractResponse.data?.['@id']?.toString() as string;
+
+            controller.log(
+                'info',
+                `[${requestId}] ✓ Contract negotiation reached FINALIZED: ${contractId}\n`,
+                'ScalingTest',
+                { requestId, contractId, batchSize: batchSize.toString(), status: 'success' }
+            );
         } catch (error) {
             controller.log(
                 'warn',
                 `[${requestId}] ⚠ Contract negotiation failed: ${error}\n`,
                 'ScalingTest',
-                { requestId, batchSize: batchSize.toString(), status: 'error' }
+                { requestId, contractId, batchSize: batchSize.toString(), status: 'error' }
             );
             throw error;
         }
@@ -395,14 +402,14 @@ export class EDCScalingTest implements Scenario {
                 'info',
                 `[${requestId}] ✓ Transfer reached STARTED\n`,
                 'ScalingTest',
-                { requestId, batchSize: batchSize.toString(), status: 'success' }
+                { requestId, contractId, batchSize: batchSize.toString(), status: 'success' }
             );
         } catch (error) {
             controller.log(
                 'warn',
                 `[${requestId}] ⚠ Transfer failed: ${error}\n`,
                 'ScalingTest',
-                { requestId, batchSize: batchSize.toString(), status: 'error' }
+                { requestId, contractId, batchSize: batchSize.toString(), status: 'error' }
             );
             throw error;
         }

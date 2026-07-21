@@ -366,7 +366,7 @@
             "uid": "loki"
           },
           "editorMode": "builder",
-          "expr": "{group=\"testrun\", app!~\"loki|grafana\"} | unpack",
+          "expr": "{namespace=\"$dssim-test\", app!~\"loki|grafana\"} | unpack",
           "queryType": "range",
           "refId": "A"
         }
