@@ -30,6 +30,7 @@ import { runScenarioFunction } from './runFunction.js';
 import { EdcSenario } from './scenarios/EDCScenario.js';
 import { EDCFullFlowTest } from './scenarios/EDCFullFlowTest.js';
 import { EDCScalingTest } from './scenarios/EDCScalingTest.js';
+import { EDCAssetHandlingTest } from './scenarios/EDCAssetHandlingTest.js';
 
 process.on('uncaughtException', function (exception) {
   // eslint-disable-next-line no-console
@@ -41,6 +42,7 @@ process.on('unhandledRejection', (reason, p) => {
 });
 
 const scenarios = [
+  EDCAssetHandlingTest,
   EDCScalingTest,
   GetDescription,
   DataService,
