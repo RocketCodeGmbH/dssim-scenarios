@@ -104,62 +104,92 @@ export class EDCAssetHandlingTest implements Scenario {
                 return;
             }
 
-            // Create Policy and Contract Definition for the assets
-            if (startIndex === 0) {
-                try {
-                    const policyResponse = await (
-                        provider.componentController as EDCController
-                    ).connectorApi.controlPlane.policyService.createPolicyDefinitionV3({
-                        body: {
-                            '@context': {
-                                '@vocab': 'https://w3id.org/edc/v0.0.1/ns/',
-                            },
-                            '@id': `Policy`,
-                            policy: {
-                                '@context': 'http://www.w3.org/ns/odrl.jsonld',
-                                '@type': 'Set',
-                            },
+            try {
+                const timestamp = new Date().getFullYear();
+                const firstDate = new Date(Date.UTC(timestamp, 0, 1, 0, 0, 0)).toISOString();
+                const lastDate = new Date(Date.UTC(timestamp, 11, 31, 6, 0, 0)).toISOString();
+
+                controller.log(
+                    'info',
+                    `  DEBUG Creating policy and contract definition for asset ${assetID} with inForceDate between ${firstDate} and ${lastDate}`,
+                    'Scenario',
+                    {}
+                );
+
+                const policyResponse = await (
+                    provider.componentController as EDCController
+                ).connectorApi.controlPlane.policyService.createPolicyDefinitionV3({
+                    body: {
+                        '@context': {
+                            '@vocab': 'https://w3id.org/edc/v0.0.1/ns/',
                         },
-                    });
+                        '@id': `Policy_${i}`,
+                        policy: {
+                            '@context': 'http://www.w3.org/ns/odrl.jsonld',
+                            '@type': 'Set',
+                            'permission': [
+                                {
+                                    "target": assetID,
+                                    "action": "use",
+                                    "constraint": [{
+                                        "leftOperand": "https://w3id.org/edc/v0.0.1/ns/inForceDate",
+                                        "operator": "gteq",
+                                        "rightOperand": firstDate
 
-                    controller.log(
-                        'info',
-                        `  DEBUG Policy response:` + JSON.stringify(policyResponse, null, 2),
-                        'Scenario',
-                        {}
-                    );
+                                    },
+                                    {
+                                        "leftOperand": "https://w3id.org/edc/v0.0.1/ns/inForceDate",
+                                        "operator": "lteq",
+                                        "rightOperand": lastDate
 
-                    const contractDefinitionResponse = await (
-                        provider.componentController as EDCController
-                    ).connectorApi.controlPlane.contractDefinitionService.createContractDefinitionV3({
-                        body: {
-                            '@context': {
-                                '@vocab': 'https://w3id.org/edc/v0.0.1/ns/',
-                            },
-                            '@type': 'ContractDefinition',
-                            '@id': `ContractDefinition`,
-                            accessPolicyId: `Policy`,
-                            contractPolicyId: `Policy`,
-                            assetsSelector: []
+                                    }
+                                    ]
+
+                                }],
+                        }
+                    }
+                });
+
+                controller.log(
+                    'info',
+                    `  DEBUG Policy response:` + JSON.stringify(policyResponse, null, 2),
+                    'Scenario',
+                    {}
+                );
+
+                const contractDefinitionResponse = await (
+                    provider.componentController as EDCController
+                ).connectorApi.controlPlane.contractDefinitionService.createContractDefinitionV3({
+                    body: {
+                        '@context': {
+                            '@vocab': 'https://w3id.org/edc/v0.0.1/ns/',
                         },
-                    });
-                    controller.log(
-                        'info',
-                        `  DEBUG Contract Definition response:` + JSON.stringify(contractDefinitionResponse, null, 2),
-                        'Scenario',
-                        {}
-                    );
+                        '@type': 'ContractDefinition',
+                        '@id': `ContractDefinition_${i}`,
+                        accessPolicyId: `Policy_${i}`,
+                        contractPolicyId: `Policy_${i}`,
+                        assetsSelector: [{
+                            operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id' as any,
+                            operator: '=',
+                            operandRight: assetID as any
+                        }],
+                    },
+                });
+                controller.log(
+                    'info',
+                    `  DEBUG Contract Definition response:` + JSON.stringify(contractDefinitionResponse, null, 2),
+                    'Scenario',
+                    {}
+                );
 
-                } catch (error) {
-                    controller.log(
-                        'warn',
-                        `  ⚠ Warning: Could not create policy or contract definition: ${error}\n`,
-                        'Scenario',
-                        {}
-                    );
-                    return;
-                }
-
+            } catch (error) {
+                controller.log(
+                    'warn',
+                    `  ⚠ Warning: Could not create policy or contract definition: ${error}\n`,
+                    'Scenario',
+                    {}
+                );
+                return;
             }
         }
     }
@@ -324,7 +354,6 @@ export class EDCAssetHandlingTest implements Scenario {
                         '@type': `http://www.w3.org/ns/odrl/2/Offer`,
                         assigner: 'did:web:edcprovider-cp%3A9083:tester',
                         target: assetId,
-                        ...offerPolicyContext.offerPolicy,
                     },
                     protocol: 'dataspace-protocol-http',
                 } as ContractRequest,
@@ -369,7 +398,7 @@ export class EDCAssetHandlingTest implements Scenario {
                 stopwatch.stop();
                 controller.log(
                     'info',
-                    `Contract negotiation was terminated after ${stopwatch.getTime()} ms`,
+                    `Contract negotiation for asset ${assetId} was terminated after ${stopwatch.getTime()} ms`,
                     'Scenario',
                     {}
                 );
@@ -386,7 +415,7 @@ export class EDCAssetHandlingTest implements Scenario {
 
             controller.log(
                 'info',
-                `[$ ✓ Contract negotiation reached FINALIZED: ${contractId} after ${stopwatch.getTime()} ms\n`,
+                `[$ ✓ Contract negotiation for asset ${assetId} reached FINALIZED: ${contractId} after ${stopwatch.getTime()} ms\n`,
                 'scenario',
                 { contractId, status: 'success' }
             );
@@ -394,7 +423,7 @@ export class EDCAssetHandlingTest implements Scenario {
         } catch (error) {
             controller.log(
                 'warn',
-                ` ⚠ Contract negotiation failed: ${error}\n`,
+                ` ⚠ Contract negotiation for asset ${assetId} failed: ${error}\n`,
                 'scenario',
                 { status: 'error' }
             );
