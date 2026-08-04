@@ -49,7 +49,7 @@ export class EDCAssetHandlingTest implements Scenario {
                 {}
             );
 
-            await EDCAssetHandlingTest.measureCatalogQuery(controller, consumer);
+            await EDCAssetHandlingTest.measureCatalogQuery(controller, consumer, currentCatalogSize);
 
             const assetId = `Asset_${currentCatalogSize - 1}`;
             const randomAssetIndex = Math.floor(Math.random() * currentCatalogSize);
@@ -89,7 +89,7 @@ export class EDCAssetHandlingTest implements Scenario {
                 });
                 controller.log(
                     'info',
-                    `  DEBUG Asset response:` + JSON.stringify(assetResponse, null, 2),
+                    ` ✓ Asset ${assetID} created successfully\n`,
                     'Scenario',
                     {}
                 );
@@ -101,20 +101,13 @@ export class EDCAssetHandlingTest implements Scenario {
                     {}
                 );
 
-                return;
+                throw error;
             }
 
             try {
                 const timestamp = new Date().getFullYear();
                 const firstDate = new Date(Date.UTC(timestamp, 0, 1, 0, 0, 0)).toISOString();
                 const lastDate = new Date(Date.UTC(timestamp, 11, 31, 6, 0, 0)).toISOString();
-
-                controller.log(
-                    'info',
-                    `  DEBUG Creating policy and contract definition for asset ${assetID} with inForceDate between ${firstDate} and ${lastDate}`,
-                    'Scenario',
-                    {}
-                );
 
                 const policyResponse = await (
                     provider.componentController as EDCController
@@ -150,12 +143,6 @@ export class EDCAssetHandlingTest implements Scenario {
                     }
                 });
 
-                controller.log(
-                    'info',
-                    `  DEBUG Policy response:` + JSON.stringify(policyResponse, null, 2),
-                    'Scenario',
-                    {}
-                );
 
                 const contractDefinitionResponse = await (
                     provider.componentController as EDCController
@@ -177,7 +164,7 @@ export class EDCAssetHandlingTest implements Scenario {
                 });
                 controller.log(
                     'info',
-                    `  DEBUG Contract Definition response:` + JSON.stringify(contractDefinitionResponse, null, 2),
+                    ` ✓ Contract Definition + Policy response successfully created for asset ${assetID} with inForceDate between ${firstDate} and ${lastDate}\n`,
                     'Scenario',
                     {}
                 );
@@ -189,17 +176,17 @@ export class EDCAssetHandlingTest implements Scenario {
                     'Scenario',
                     {}
                 );
-                return;
+                throw error;
             }
         }
     }
 
-    static async measureCatalogQuery(controller: ScenarioControllerInterface, consumer: Awaited<ReturnType<ScenarioControllerInterface['startConnector']>>): Promise<void> {
+    static async measureCatalogQuery(controller: ScenarioControllerInterface, consumer: Awaited<ReturnType<ScenarioControllerInterface['startConnector']>>, catalogSize: number): Promise<void> {
         const stopwatch = new Stopwatch();
-        stopwatch.start();
 
         // Measure catalog query time
         try {
+            stopwatch.start();
             const catalogResponse = await (
                 consumer.componentController as EDCController
             ).connectorApi.controlPlane.catalogService.requestCatalogV3({
@@ -211,8 +198,7 @@ export class EDCAssetHandlingTest implements Scenario {
                     counterPartyAddress: `http://edcprovider-cp:9083/api/v1/dsp`,
                     protocol: 'dataspace-protocol-http',
                     querySpec: {
-                        limit: assetEndIndex,
-                        sortOrder: 'ASC',
+                        limit: catalogSize
                     },
                 }
             });
@@ -249,7 +235,7 @@ export class EDCAssetHandlingTest implements Scenario {
                     protocol: 'dataspace-protocol-http',
                     querySpec: {
                         limit: assetBatchSize,
-                        sortOrder: 'DESC',
+                        offset: catalogSize - assetBatchSize
                     },
                 }
             });
@@ -288,8 +274,7 @@ export class EDCAssetHandlingTest implements Scenario {
                     counterPartyAddress: `http://edcprovider-cp:9083/api/v1/dsp`,
                     protocol: 'dataspace-protocol-http',
                     querySpec: {
-                        limit: assetEndIndex,
-                        sortOrder: 'ASC',
+                        limit: assetEndIndex
                     },
                 }
             });
@@ -329,7 +314,7 @@ export class EDCAssetHandlingTest implements Scenario {
                 'Scenario',
                 {}
             );
-            return { catalogId: '', offerPolicy: {} };
+            throw error;
         }
     }
 
@@ -415,7 +400,7 @@ export class EDCAssetHandlingTest implements Scenario {
 
             controller.log(
                 'info',
-                `[$ ✓ Contract negotiation for asset ${assetId} reached FINALIZED: ${contractId} after ${stopwatch.getTime()} ms\n`,
+                ` ✓ Contract negotiation for asset ${assetId} reached FINALIZED: ${contractId} after ${stopwatch.getTime()} ms\n`,
                 'scenario',
                 { contractId, status: 'success' }
             );
