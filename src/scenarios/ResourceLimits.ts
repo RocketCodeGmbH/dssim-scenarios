@@ -54,9 +54,11 @@ export class ResourceLimits implements Scenario {
     );
 
     await provider.instanceController.setNetworkControl({
-      bandwidth: {
-        value: 56,
-        unit: 'kbit',
+      ingress: {
+        bandwidth: {
+          value: 56,
+          unit: 'kbit',
+        },
       },
     });
   };
