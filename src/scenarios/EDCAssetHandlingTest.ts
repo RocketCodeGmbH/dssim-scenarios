@@ -4,7 +4,7 @@ import { EDCController } from 'dssim-edc-controller';
 import { DataAddress } from 'edc-lib/management-api/asset-api';
 import { ContractRequest } from 'edc-lib/management-api/contract-negotiation-api';
 import { Stopwatch } from "ts-stopwatch";
-import { off } from 'process';
+
 
 const assetBatchSize = Number(process.env.EDC_ASSET_HANDLING_BATCH_SIZE) || 100;
 const assetEndIndex = Number(process.env.EDC_ASSET_HANDLING_END_INDEX) || 1000;
@@ -28,8 +28,9 @@ export class EDCAssetHandlingTest implements Scenario {
 
             const batchEndIndex = Math.min(i + assetBatchSize, assetEndIndex);
             await EDCAssetHandlingTest.batchAssetCreation(controller, provider, i, batchEndIndex);
+
             const currentCatalogSize = batchEndIndex;
-            controller.log('info', `  ✓ Created total ${currentCatalogSize} assets\n`, 'Scenario', {});
+            controller.log('info', `  [Batch ${i / assetBatchSize + 1}] Created total ${currentCatalogSize} assets\n`, 'Scenario', {});
 
             // give the provider's catalog a moment to index the newest batch
             await new Promise(resolve => setTimeout(resolve, assetCreationDelay));
@@ -51,9 +52,15 @@ export class EDCAssetHandlingTest implements Scenario {
         startIndex: number,
         endIndex: number
     ): Promise<void> {
+
+        const timestamp = new Date().getFullYear();
+        const firstDate = new Date(Date.UTC(timestamp, 0, 1, 0, 0)).toISOString();
+        const lastDate = new Date(Date.UTC(timestamp, 11, 31, 23, 59)).toISOString();
+
         for (let i = startIndex; i < endIndex; i++) {
             const assetID = `Asset_${i}`;
             try {
+
                 await (
                     provider.componentController as EDCController
                 ).connectorApi.controlPlane.assetService.createAssetV3({
@@ -72,10 +79,6 @@ export class EDCAssetHandlingTest implements Scenario {
                         } as DataAddress & { baseUrl: string; name: string },
                     },
                 });
-
-                const timestamp = new Date().getFullYear();
-                const firstDate = new Date(Date.UTC(timestamp, 0, 1, 0, 0)).toISOString();
-                const lastDate = new Date(Date.UTC(timestamp, 11, 31, 23, 59)).toISOString();
 
                 await (
                     provider.componentController as EDCController
@@ -134,17 +137,22 @@ export class EDCAssetHandlingTest implements Scenario {
                     },
                 });
 
-                controller.log(
-                    'info',
-                    `  ✓ Asset + policy + contract definition created for ${assetID} (inForceDate ${firstDate} - ${lastDate})\n`,
-                    'Scenario',
-                    {}
-                );
             } catch (error) {
-                controller.log('warn', `  ⚠ Warning: Failed in batch asset creation for ${assetID}: ${error}\n`, 'Scenario', {});
+                controller.log('warn', `⚠ Warning: Failed in batch asset creation for ${assetID}: ${error}\n`, 'Scenario', {});
                 throw error;
             }
         }
+
+        controller.log(
+            'info',
+            '[BATCH_ASSET_CREATION_COMPLETED]',
+            'Scenario',
+            {
+                startIndex: startIndex.toString(),
+                endIndex: endIndex.toString(),
+                assetCount: (endIndex - startIndex).toString(),
+            }
+        );
     }
 
     static async measureCatalogQuery(
@@ -153,6 +161,7 @@ export class EDCAssetHandlingTest implements Scenario {
         currentCatalogSize: number
     ): Promise<any> {
         const stopwatch = new Stopwatch();
+        const offset = Math.max(0, currentCatalogSize - assetBatchSize);
         try {
             stopwatch.start();
             const catalogResponse = await (
@@ -167,11 +176,17 @@ export class EDCAssetHandlingTest implements Scenario {
                 },
             });
             stopwatch.stop();
+
             controller.log(
                 'info',
-                `  ✓ Catalog query time for assets: ${stopwatch.getTime()} ms\n`,
+                'Full catalog query completed with ' + currentCatalogSize + ' assets in ' + stopwatch.getTime() + ' ms',
                 'Scenario',
-                { durationMs: stopwatch.getTime().toString(), catalogSize: currentCatalogSize.toString() }
+                {
+                    queryType: 'FULL',
+                    catalogSize: currentCatalogSize.toString(),
+                    queryLimit: currentCatalogSize.toString(),
+                    durationMs: stopwatch.getTime().toString(),
+                }
             );
 
             stopwatch.reset();
@@ -193,9 +208,15 @@ export class EDCAssetHandlingTest implements Scenario {
             stopwatch.stop();
             controller.log(
                 'info',
-                `  ✓ Catalog query time for last ${assetBatchSize} assets: ${stopwatch.getTime()} ms\n`,
+                'Last batch catalog query completed with ' + assetBatchSize + ' assets in ' + stopwatch.getTime() + ' ms',
                 'Scenario',
-                { durationMs: stopwatch.getTime().toString(), catalogSize: assetBatchSize.toString() }
+                {
+                    queryType: 'LAST_BATCH',
+                    catalogSize: currentCatalogSize.toString(),
+                    offset: offset.toString(),
+                    queryLimit: assetBatchSize.toString(),
+                    durationMs: stopwatch.getTime().toString(),
+                }
             );
 
             return catalogResponse;
@@ -295,13 +316,16 @@ export class EDCAssetHandlingTest implements Scenario {
                 stopwatch.stop();
                 controller.log(
                     'info',
-                    `Contract negotiation for asset ${assetId} was terminated after ${stopwatch.getTime()} ms`,
+                    '  ⚠ Contract negotiation for asset ${assetId} terminated before finalization\n',
                     'Scenario',
-                    {}
+                    {
+                        assetId,
+                        state: 'TERMINATED',
+                        durationMs: stopwatch.getTime().toString(),
+                    }
                 );
                 return;
             }
-
             stopwatch.stop();
 
             const contractResponse = await (
@@ -313,9 +337,14 @@ export class EDCAssetHandlingTest implements Scenario {
 
             controller.log(
                 'info',
-                `  ✓ Contract negotiation for asset ${assetId} reached FINALIZED: Contract ID ${contractId} after ${stopwatch.getTime()} ms\n`,
+                '  ✓ Contract negotiation finalized for asset ${assetId} (negotiation ${negotiationId}, contract ${contractId}) in ${stopwatch.getTime()} ms\n',
                 'Scenario',
-                { durationMs: stopwatch.getTime().toString() }
+                {
+                    assetId,
+                    contractId,
+                    state: 'FINALIZED',
+                    durationMs: stopwatch.getTime().toString(),
+                }
             );
         } catch (error) {
             controller.log('warn', `  ⚠ Contract negotiation for asset ${assetId} failed: ${error}\n`, 'Scenario', {});
