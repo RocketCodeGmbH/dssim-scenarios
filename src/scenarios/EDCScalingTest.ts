@@ -6,6 +6,7 @@ import { ContractRequest } from 'edc-lib/management-api/contract-negotiation-api
 import { Stopwatch } from "ts-stopwatch";
 
 const batchSize = Number(process.env.EDC_SCALING_BATCH_SIZES) || 5;
+const delayMs = Number(process.env.EDC_SCALING_DELAY_MS) || 10000;
 
 
 export class EDCScalingTest implements Scenario {
@@ -189,13 +190,12 @@ export class EDCScalingTest implements Scenario {
             'ScalingTest',
             { batchSize: batchSize.toString() }
         );
-
         stopwatch.start();
         const results = await Promise.allSettled(
 
             consumers.map(async (consumer, i) => {
-                setTimeout(() => {
-                }, Math.floor(Math.random() * 999) + 2);
+
+                await new Promise(resolve => setTimeout(resolve, delayMs));
                 const consumerTimer = new Stopwatch();
                 consumerTimer.start();
 

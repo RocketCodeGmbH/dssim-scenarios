@@ -3,6 +3,7 @@ import { splitEdcFactory } from '../configurations/splitEdcFactory.js';
 import { EDCController } from 'dssim-edc-controller';
 import { DataAddress } from 'edc-lib/management-api/asset-api';
 import { ContractRequest } from 'edc-lib/management-api/contract-negotiation-api';
+import { catalogHelper } from '../helper/CatalogHelper.js';
 import { Stopwatch } from "ts-stopwatch";
 
 
@@ -227,29 +228,7 @@ export class EDCAssetHandlingTest implements Scenario {
         }
     }
 
-    static async getOfferPolicyDetails(
-        assetId: string,
-        catalogResponse: any
-    ): Promise<{ offerPolicy: any }> {
 
-        const catalog = catalogResponse?.data;
-        const dataset = catalog?.['dcat:dataset'];
-        const datasetArray = Array.isArray(dataset) ? dataset : dataset ? [dataset] : [];
-        const matchedDataset = datasetArray.find((d: any) => d['@id'] === assetId);
-
-        if (matchedDataset) {
-            const offerPolicyRaw = matchedDataset['odrl:hasPolicy'];
-            const offerPolicy = Array.isArray(offerPolicyRaw) ? offerPolicyRaw[0] : offerPolicyRaw;
-
-
-            if (!offerPolicy || !offerPolicy['@id']) {
-                throw new Error(`Offer policy for asset ${assetId} malformed or missing @id`);
-            }
-            return { offerPolicy };
-        }
-
-        throw new Error(`Asset ID ${assetId} not found in catalog`);
-    }
 
     static async measureContractNegotiation(
         controller: ScenarioControllerInterface,
@@ -258,17 +237,7 @@ export class EDCAssetHandlingTest implements Scenario {
         catalogResponse: any
     ): Promise<void> {
         const stopwatch = new Stopwatch();
-        const offerPolicyContext = await EDCAssetHandlingTest.getOfferPolicyDetails(assetId, catalogResponse);
-        const offer = offerPolicyContext.offerPolicy;
-
-        const policy = {
-            '@context': 'http://www.w3.org/ns/odrl.jsonld',
-            '@id': offer['@id'],
-            '@type': `http://www.w3.org/ns/odrl/2/Offer`,
-            assigner: 'did:web:edcprovider-cp%3A9083:tester',
-            target: assetId,
-            ...offer
-        };
+        const offerPolicy = await catalogHelper.getOfferPolicyDetails(assetId, catalogResponse);
 
         try {
 
@@ -281,7 +250,7 @@ export class EDCAssetHandlingTest implements Scenario {
                         'https://w3id.org/edc/connector/management/v0.0.1'
                     ] as unknown as { [key: string]: unknown },
                     counterPartyAddress: `http://edcprovider-cp:9083/api/v1/dsp`,
-                    policy: policy,
+                    policy: offerPolicy.Policy,
                     protocol: 'dataspace-protocol-http'
                 } as ContractRequest,
             });

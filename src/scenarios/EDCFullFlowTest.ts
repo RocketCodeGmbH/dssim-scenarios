@@ -429,42 +429,51 @@ export class EDCFullFlowTest implements Scenario {
     // // PHASE 5.5 : Check DP
     // // ============================================
 
-    const dataPlaneStatus_Consumer = await (
-      consumer.componentController as EDCController
-    ).connectorApi.controlPlane.controlDataplaneSelector.findDataPlaneById({
-      path: {
-        id: 'edcconsumer-dp',
-      },
-    });
+    try {
 
-    const dataPlaneStatus_Provider = await (
-      provider.componentController as EDCController
-    ).connectorApi.controlPlane.controlDataplaneSelector.findDataPlaneById({
-      path: {
-        id: 'edcprovider-dp',
-      },
-    });
+      const dataPlaneStatus_Consumer = await (
+        consumer.componentController as EDCController
+      ).connectorApi.controlPlane.controlDataplaneSelector.findDataPlaneById({
+        path: {
+          id: 'edcconsumer-dp',
+        },
+      });
+      controller.log(
+        'info',
+        `  DEBUG Consumer dataplane status:` +
+        JSON.stringify(dataPlaneStatus_Consumer, null, 2),
+        'Scenario',
+        {}
+      );
 
-    controller.log(
-      'info',
-      `  DEBUG Consumer dataplane status:` +
-      JSON.stringify(dataPlaneStatus_Consumer, null, 2),
-      'Scenario',
-      {}
-    );
-    controller.log(
-      'info',
-      `  DEBUG Provider dataplane status:` +
-      JSON.stringify(dataPlaneStatus_Provider, null, 2),
-      'Scenario',
-      {}
-    );
-    controller.log(
-      'info',
-      `  ✓ Dataplane status retrieved successfully\n`,
-      'Scenario',
-      {}
-    );
+      const dataPlaneStatus_Provider = await (
+        provider.componentController as EDCController
+      ).connectorApi.controlPlane.controlDataplaneSelector.findDataPlaneById({
+        path: {
+          id: 'edcprovider-dp',
+        },
+      });
+      controller.log(
+        'info',
+        `  DEBUG Provider dataplane status:` +
+        JSON.stringify(dataPlaneStatus_Provider, null, 2),
+        'Scenario',
+        {}
+      );
+      controller.log(
+        'info',
+        `  ✓ Dataplane status retrieved successfully\n`,
+        'Scenario',
+        {}
+      );
+    } catch (error) {
+      controller.log(
+        'warn',
+        `  ⚠ Warning: Could not retrieve dataplane status: ${error}\n`,
+        'Scenario',
+        {}
+      );
+    }
 
     // // ============================================
     // // PHASE 6: Data Transfer

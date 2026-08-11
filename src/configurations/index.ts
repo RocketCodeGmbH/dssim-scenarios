@@ -17,18 +17,18 @@
  *       Michel Otto - initial implementation
  *
  */
-import {ScenarioConfiguration} from 'dssim-core';
-import {DapsController, DSCController} from 'dssim-ids-controller';
+import { ScenarioConfiguration } from 'dssim-core';
+import { DapsController, DSCController } from 'dssim-ids-controller';
 import {
   KubernetesController,
   DapsInstance,
   DSCInstance,
 } from 'dssim-kubernetes-controller';
-import {MyCustomIDSControllerExtension} from '../extensions/MyIdsExtionsion.js';
+import { MyCustomIDSControllerExtension } from '../extensions/MyIdsExtionsion.js';
 import fs from 'fs';
-import {EDCController} from 'dssim-edc-controller';
-import {edcFactory} from './edcFactory.js';
-import {splitEdcFactory} from './splitEdcFactory.js';
+import { EDCController } from 'dssim-edc-controller';
+import { edcFactory } from './edcFactory.js';
+import { splitEdcFactory } from './splitEdcFactory.js';
 
 export const pullSecret = {
   [process.env.SCECTR_CONNECTOR_IMAGE_HOSTNAME!]: {

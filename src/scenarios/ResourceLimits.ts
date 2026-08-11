@@ -17,9 +17,9 @@
  *       Michel Otto - initial implementation
  *
  */
-import {DSCController} from 'dssim-ids-controller';
-import {DSCInstance} from 'dssim-kubernetes-controller';
-import {Scenario, ScenarioControllerInterface} from 'dssim-core';
+import { DSCController } from 'dssim-ids-controller';
+import { DSCInstance } from 'dssim-kubernetes-controller';
+import { Scenario, ScenarioControllerInterface } from 'dssim-core';
 
 export class ResourceLimits implements Scenario {
   scenario_name = 'Enforce resource limits';
@@ -47,17 +47,19 @@ export class ResourceLimits implements Scenario {
             },
           },
         ],
-        {value: 2000, unit: 'M'},
-        {value: 500, unit: 'milicpu'}
+        { value: 2000, unit: 'M' },
+        { value: 500, unit: 'milicpu' }
       ),
       DSCController
     );
 
     await provider.instanceController.setNetworkControl({
-      bandwidth: {
-        value: 56,
-        unit: 'kbit',
-      },
+      ingress: {
+        bandwidth: {
+          value: 56,
+          unit: 'kbit',
+        },
+      }
     });
   };
 }

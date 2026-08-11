@@ -31,6 +31,9 @@ import { EdcSenario } from './scenarios/EDCScenario.js';
 import { EDCFullFlowTest } from './scenarios/EDCFullFlowTest.js';
 import { EDCScalingTest } from './scenarios/EDCScalingTest.js';
 import { EDCAssetHandlingTest } from './scenarios/EDCAssetHandlingTest.js';
+import { SimpleNetworkLatencyTest } from './scenarios/SimpleNetworkLatencyTest.js';
+import { LatencyResilienceTest } from './scenarios/LatencyResilienceTest.js';
+
 
 process.on('uncaughtException', function (exception) {
   // eslint-disable-next-line no-console
@@ -42,8 +45,10 @@ process.on('unhandledRejection', (reason, p) => {
 });
 
 const scenarios = [
+  LatencyResilienceTest,
   EDCAssetHandlingTest,
   EDCScalingTest,
+  EDCFullFlowTest,
   GetDescription,
   DataService,
   ResourceLimits,
@@ -51,7 +56,7 @@ const scenarios = [
   CustomControllerExtension,
   PISzenario,
   EdcSenario,
-  EDCFullFlowTest,
+  SimpleNetworkLatencyTest,
 ];
 
 const cli = new DssimCli(scenarios, runScenarioFunction);
