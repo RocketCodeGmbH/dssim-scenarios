@@ -19,21 +19,21 @@
  */
 import './loadEnv.js';
 
-import { GetDescription } from './scenarios/GetDescription.js';
-import { DataService } from './scenarios/DataService.js';
-import { ResourceLimits } from './scenarios/ResourceLimits.js';
-import { ExplicitController } from './scenarios/ExplicitController.js';
-import { CustomControllerExtension } from './scenarios/CustomExtension.js';
-import { PISzenario } from './scenarios/ValueArtifactTransfer.js';
-import { DssimCli } from './ui/cli.js';
-import { runScenarioFunction } from './runFunction.js';
-import { EdcSenario } from './scenarios/EDCScenario.js';
-import { EDCFullFlowTest } from './scenarios/EDCFullFlowTest.js';
-import { EDCScalingTest } from './scenarios/EDCScalingTest.js';
-import { EDCAssetHandlingTest } from './scenarios/EDCAssetHandlingTest.js';
-import { SimpleNetworkLatencyTest } from './scenarios/SimpleNetworkLatencyTest.js';
-import { LatencyResilienceTest } from './scenarios/LatencyResilienceTest.js';
-
+import {GetDescription} from './scenarios/GetDescription.js';
+import {DataService} from './scenarios/DataService.js';
+import {ResourceLimits} from './scenarios/ResourceLimits.js';
+import {ExplicitController} from './scenarios/ExplicitController.js';
+import {CustomControllerExtension} from './scenarios/CustomExtension.js';
+import {PISzenario} from './scenarios/ValueArtifactTransfer.js';
+import {DssimCli} from './ui/cli.js';
+import {runScenarioFunction} from './runFunction.js';
+import {EdcSenario} from './scenarios/EDCScenario.js';
+import {EDCFullFlowTest} from './scenarios/EDCFullFlowTest.js';
+import {EDCScalingTest} from './scenarios/EDCScalingTest.js';
+import {EDCAssetHandlingTest} from './scenarios/EDCAssetHandlingTest.js';
+import {SimpleNetworkLatencyTest} from './scenarios/SimpleNetworkLatencyTest.js';
+import {LatencyResilienceTest} from './scenarios/LatencyResilienceTest.js';
+import {FederatedCatalogCrawlTest} from './scenarios/FederatedCatalogCrawlTest.js';
 
 process.on('uncaughtException', function (exception) {
   // eslint-disable-next-line no-console
@@ -45,6 +45,7 @@ process.on('unhandledRejection', (reason, p) => {
 });
 
 const scenarios = [
+  FederatedCatalogCrawlTest,
   LatencyResilienceTest,
   EDCAssetHandlingTest,
   EDCScalingTest,

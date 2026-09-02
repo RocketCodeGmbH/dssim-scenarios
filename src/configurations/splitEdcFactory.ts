@@ -22,7 +22,16 @@ import {EDCInstance, SplitEDCInstance} from 'dssim-kubernetes-controller';
 import fs from 'fs';
 import {pullSecret} from './index.js';
 
-export const splitEdcFactory = (deploymentName: string) => {
+export const splitEdcFactory = (
+  deploymentName: string,
+  federatedCatalog = false
+) => {
+  const RegistryUrl = process.env.FC_REGISTRY_URL
+    ? process.env.FC_REGISTRY_URL
+    : 'https://services.iosb-ast.fraunhofer.de/ed-x/connector-registry/registry';
+
+  const registryKey = process.env.FC_REGISTRY_API_KEY;
+
   const loadEdcKeyStoreFile = () =>
     fs.readFileSync('./assets/edc/certs/cert.pfx', 'base64');
 
@@ -90,21 +99,23 @@ web.http.catalog.port=${port('catalog')}
 // edc.datasource.default.password=devpass
 // edc.datasource.default.url=jdbc:postgresql://postgreshost:5432/edc
 
-edc.catalog.registry.enabled=false
-edc.catalog.registry.url=http://connector-registry:3000/api/registry
-edc.catalog.registry.api.key=devpass
-edc.catalog.cache.execution.period.seconds=30
-edc.catalog.cache.execution.delay.seconds=5
-edc.catalog.cache.partition.num.crawlers=5
+edc.catalog.cache.execution.enabled=${federatedCatalog}
+edc.catalog.registry.enabled=${federatedCatalog}
+edc.catalog.registry.url=${RegistryUrl}
+edc.catalog.registry.api.key=${registryKey}
+edc.catalog.cache.execution.period.seconds=${federatedCatalog ? 30000 : 30}
+edc.catalog.cache.execution.delay.seconds=10
+edc.catalog.cache.partition.num.crawlers=3
 
-edc.registration.registry.enabled=false
+edc.registration.registry.enabled=${federatedCatalog}
 edc.registration.participant.context.enabled=false
 edc.registration.membership.issuance.enabled=false
 edc.registration.marketpartner.issuance.enabled=false
-edc.registration.connector.name=${cpHostname}
-edc.registration.registry.url=http://connector-registry:3000/api/registry
-edc.registration.registry.api.key=devpass
+edc.registration.connector.name= ${cpHostname}
+edc.registration.registry.url=${RegistryUrl}
+edc.registration.registry.api.key=${registryKey}
 edc.registration.keys.name.overwrite=${cpHostname}
+edc.registration.registry.auto=false
 edc.registration.ih.identity.url=http://identity-hub:10082/api/identity
 edc.registration.ih.credentials.url=http://identity-hub:10081/api/credentials
 edc.registration.issuer.did=did:web:issuer%3A20085:issuer
@@ -173,7 +184,9 @@ edc.policy.pm.token.client.secret.alias=pm-secret`;
     loadEdcVaultFile(),
     '123',
     {
-      image: 'otmi100/connector-controlplane-mock:0.14.0-inmem-1',
+      // This image does not have the federated catalog feature enabled
+      //image: 'otmi100/connector-controlplane-mock:0.14.0-inmem-1',
+      image: 'ebaylerc/ctrlplane-federated-catalog:dev',
       pullSecret: pullSecret,
     },
     // {

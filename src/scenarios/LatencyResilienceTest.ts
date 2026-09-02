@@ -5,7 +5,7 @@ import {EDCController} from 'dssim-edc-controller';
 import {DataAddress} from 'edc-lib/management-api/asset-api';
 import {Stopwatch} from 'ts-stopwatch';
 
-import {catalogHelper} from '../helper/CatalogHelper.js';
+import {EDCAssetCatalogHelper} from '../helper/EDCAssetCatalogHelper.js';
 
 const delayMs = Number(process.env.EDC_CONSUMERS_SETTLE_DELAY_MS) || 1000;
 const LATENCY_VALUES_MS = process.env.LATENCY_VALUES_MS?.split(',').map(
@@ -102,7 +102,12 @@ export class LatencyResilienceTest implements Scenario {
       {}
     );
 
-    const assets = await this.setupProviderAssets(controller, provider);
+    const assets = await EDCAssetCatalogHelper.setupProviderAssets(
+      controller,
+      provider,
+      assetCount,
+      'LatencyResilienceTest'
+    );
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // ============================================
@@ -252,102 +257,6 @@ export class LatencyResilienceTest implements Scenario {
     );
   }
 
-  private async setupProviderAssets(
-    controller: ScenarioControllerInterface,
-    provider: Awaited<ReturnType<ScenarioControllerInterface['startConnector']>>
-  ): Promise<string[]> {
-    const assets: string[] = [];
-
-    try {
-      // Create assets and contract definition
-      for (let i = 0; i < assetCount; i++) {
-        const assetId = `latency-test-asset-${i}`;
-        assets.push(assetId);
-
-        const asset = await (
-          provider.componentController as EDCController
-        ).connectorApi.controlPlane.assetService.createAssetV3({
-          body: {
-            '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
-            '@id': assetId,
-            properties: {
-              id: assetId,
-              name: assetId,
-              contenttype: 'application/json',
-            },
-            dataAddress: {
-              type: 'HttpData',
-              baseUrl: 'https://jsonplaceholder.typicode.com/users',
-              name: assetId,
-            } as DataAddress & {baseUrl: string; name: string},
-          },
-        });
-
-        // Create Policy
-        await (
-          provider.componentController as EDCController
-        ).connectorApi.controlPlane.policyService.createPolicyDefinitionV3({
-          body: {
-            '@context': {
-              '@vocab': 'https://w3id.org/edc/v0.0.1/ns/',
-            },
-            '@id': `policyId_${i}`,
-            '@type': 'PolicyDefinition',
-            policy: {
-              '@context': 'http://www.w3.org/ns/odrl.jsonld',
-              '@type': 'Set',
-              permission: [
-                {
-                  target: assetId,
-                  action: 'use',
-                  constraint: [],
-                },
-              ],
-            },
-          },
-        });
-
-        // Create contract definition for this asset
-        await (
-          provider.componentController as EDCController
-        ).connectorApi.controlPlane.contractDefinitionService.createContractDefinitionV3(
-          {
-            body: {
-              '@context': {'@vocab': 'https://w3id.org/edc/v0.0.1/ns/'},
-              '@type': 'ContractDefinition',
-              '@id': `latency-contract-def-${i}`,
-              accessPolicyId: `policyId_${i}`,
-              contractPolicyId: `policyId_${i}`,
-              assetsSelector: [
-                {
-                  operandLeft: 'https://w3id.org/edc/v0.0.1/ns/id' as any,
-                  operator: '=',
-                  operandRight: assetId as any,
-                },
-              ],
-            },
-          }
-        );
-      }
-
-      controller.log(
-        'info',
-        `  ✓ Created ${assetCount} test assets with unrestricted policy\n`,
-        'LatencyResilienceTest',
-        {}
-      );
-    } catch (error) {
-      controller.log(
-        'warn',
-        `  ⚠ Asset setup error: ${error}\n`,
-        'LatencyResilienceTest',
-        {}
-      );
-      throw error;
-    }
-    return assets;
-  }
-
   private async negotiateAsset(
     controller: ScenarioControllerInterface,
     consumer: Awaited<
@@ -356,7 +265,7 @@ export class LatencyResilienceTest implements Scenario {
     assetId: string,
     consumerIdx: number,
     latencyMs: number,
-    baseLine: boolean = false
+    baseLine = false
   ): Promise<void> {
     try {
       const catalog = await (
@@ -373,10 +282,8 @@ export class LatencyResilienceTest implements Scenario {
         },
       });
 
-      const offerPolicyContext = await catalogHelper.getOfferPolicyDetails(
-        assetId,
-        catalog
-      );
+      const offerPolicyContext =
+        await EDCAssetCatalogHelper.getOfferPolicyDetails(assetId, catalog);
       const negotiationStopwatch = new Stopwatch();
       negotiationStopwatch.start();
 
@@ -491,7 +398,7 @@ export class LatencyResilienceTest implements Scenario {
 
     await (consumers.instanceController as SplitEDCInstance).setNetworkControl({
       ingress: {
-        delay: {value: Math.round(latencyMs) / 2, unit: 'ms'},
+        delay: {value: Math.round(latencyMs / 2), unit: 'ms'},
       },
       egress: {
         delay: {value: Math.round(latencyMs / 2), unit: 'ms'},
